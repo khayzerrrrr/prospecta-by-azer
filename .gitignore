@@ -1,0 +1,40 @@
+# dependencies (bun install)
+node_modules
+
+# output
+out
+dist
+*.tgz
+
+# code coverage
+coverage
+*.lcov
+
+# logs
+logs
+*.log
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# caches
+.eslintcache
+.cache
+*.tsbuildinfo
+
+# IDE
+.idea
+.DS_Store
+
+# App specific
+uploads/
+packages/db/drizzle/
+bun.lockb
+data/
+*.db
+*.db-shm
+*.db-wal

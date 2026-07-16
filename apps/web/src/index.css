@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+
+  --color-surface-50: #f8fafc;
+  --color-surface-100: #f1f5f9;
+  --color-surface-200: #e2e8f0;
+  --color-surface-700: #334155;
+  --color-surface-800: #1e293b;
+  --color-surface-900: #0f172a;
+  --color-surface-950: #020617;
+
+  --font-sans: "Inter", "SF Pro Display", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --shadow-elevation-low: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-elevation-mid: 0 4px 6px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-elevation-high: 0 8px 16px rgba(0, 0, 0, 0.05), 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+.dark {
+  --color-surface-50: #020617;
+  --color-surface-100: #0f172a;
+  --color-surface-200: #1e293b;
+  --color-surface-700: #e2e8f0;
+  --color-surface-800: #f1f5f9;
+  --color-surface-900: #f8fafc;
+  --color-surface-950: #ffffff;
+}
+
+/* Mobile Safe Area */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Smooth Scrolling */
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Mobile Touch Optimizations */
+@media (max-width: 1023px) {
+  input, select, textarea, button {
+    font-size: 16px !important; /* Prevent iOS zoom on focus */
+  }
+
+  /* Swipe-friendly cards */
+  .swipe-card {
+    touch-action: pan-y;
+    user-select: none;
+  }
+
+  /* Mobile data card pattern */
+  .mobile-card {
+    @apply bg-white dark:bg-surface-800 rounded-2xl p-4 shadow-elevation-low active:scale-[0.98] transition-transform;
+  }
+
+  /* Bottom sheet style */
+  .mobile-sheet {
+    @apply fixed inset-x-0 bottom-0 z-50 bg-white dark:bg-surface-800 rounded-t-3xl shadow-elevation-high max-h-[85vh] overflow-y-auto;
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+
+  /* Quick stat pill */
+  .stat-pill {
+    @apply flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold;
+  }
+
+  /* Active nav indicator pulse */
+  .nav-pulse::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 16px;
+    background: var(--color-brand-500);
+    opacity: 0;
+    animation: navPulse 1.5s ease-out;
+  }
+}
+
+@keyframes navPulse {
+  0% { opacity: 0.15; transform: scale(0.8); }
+  100% { opacity: 0; transform: scale(1.4); }
+}
+
+/* Page Transition */
+.page-enter {
+  animation: pageIn 0.25s ease-out;
+}
+
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}

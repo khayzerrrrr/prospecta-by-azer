@@ -1,0 +1,30 @@
+{
+  "name": "visitflow",
+  "type": "module",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun --filter '*' dev",
+    "dev:api": "cd apps/api && bun run dev",
+    "dev:web": "cd apps/web && bun run dev",
+    "build": "bun --filter '*' build",
+    "test": "bun test",
+    "db:generate": "cd packages/db && bun run generate",
+    "db:migrate": "cd packages/db && bun run migrate",
+    "db:push": "cd packages/db && bun run push",
+    "db:seed": "cd packages/db && bun run seed",
+    "db:studio": "cd packages/db && bun run studio"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "sharp": "^0.35.3"
+  }
+}

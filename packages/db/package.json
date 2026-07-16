@@ -1,0 +1,25 @@
+{
+  "name": "@visitflow/db",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts"
+  },
+  "scripts": {
+    "generate": "drizzle-kit generate",
+    "push": "drizzle-kit push",
+    "seed": "bun run src/seed.ts",
+    "studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.11.1",
+    "drizzle-kit": "^0.30.5",
+    "drizzle-orm": "^0.38.3"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
