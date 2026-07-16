@@ -64,4 +64,10 @@ async function seed() {
 }
 
 import { eq } from "drizzle-orm";
-seed().catch(console.error).finally(() => process.exit(0));
+
+// Only auto-run when called directly (not imported)
+if (import.meta.main) {
+  seed().catch(console.error).finally(() => process.exit(0));
+}
+
+export { seed };
