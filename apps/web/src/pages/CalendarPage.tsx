@@ -220,9 +220,9 @@ export default function CalendarPage() {
 
       {/* Action Panel — appears when a visit is clicked */}
       {showActionPanel && activeVisit && (
-        <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center" onClick={() => setShowActionPanel(false)}>
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
-          <div className="relative mobile-sheet lg:rounded-3xl lg:max-w-md lg:mx-4 lg:relative lg:bottom-auto p-6 space-y-4 animate-[pageIn_0.25s_ease-out]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowActionPanel(false)} />
+          <div className="relative mobile-sheet lg:rounded-3xl lg:max-w-md lg:mx-4 lg:relative lg:bottom-auto p-6 space-y-4 animate-[pageIn_0.25s_ease-out]">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Aksi Kunjungan</h3>
               <button onClick={() => setShowActionPanel(false)} className="p-2 rounded-xl hover:bg-surface-100"><X size={20} /></button>

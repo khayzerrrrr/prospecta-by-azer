@@ -42,7 +42,8 @@ export default function LeadsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [form, setForm] = useState({ companyName: "", contactName: "", phone: "", city: "", status: "new", qualification: "cold", latitude: "", longitude: "", level: "", studentCount: "" });
+  const defaultForm = () => ({ companyName: "", contactName: "", contactTitle: "", phone: "", city: "", industry: "", status: "new", qualification: "cold", latitude: "", longitude: "" });
+  const [form, setForm] = useState(defaultForm());
   const [saving, setSaving] = useState(false);
 
   const fetchLeads = useCallback(async () => {
@@ -74,11 +75,20 @@ export default function LeadsPage() {
         payload.industry = activeIndustry;
         payload.segment = activeIndustry;
         payload.tags = [activeIndustry];
-        payload.customFields = JSON.stringify(form);
+        // Only include industry-specific fields in customFields, not generic fields
+        const genericKeys = ["companyName", "contactName", "contactTitle", "phone", "city", "industry", "status", "qualification", "latitude", "longitude"];
+        const customFields: Record<string, any> = {};
+        Object.keys(form).forEach(k => { if (!genericKeys.includes(k) && (form as any)[k]) customFields[k] = (form as any)[k]; });
+        payload.customFields = JSON.stringify(customFields);
+      } else if (form.industry) {
+        // Manually selected industry (no pack installed)
+        payload.industry = form.industry;
+        payload.segment = form.industry;
+        payload.tags = [form.industry];
       }
       await api.post("/leads", payload);
       setShowForm(false);
-      setForm({ companyName: "", contactName: "", phone: "", city: "", status: "new", qualification: "cold", latitude: "", longitude: "", level: "", studentCount: "" });
+      setForm(defaultForm());
       fetchLeads();
     } catch (e: any) { alert(e.message); }
     setSaving(false);
@@ -244,8 +254,8 @@ export default function LeadsPage() {
 
       {/* Create Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center" onClick={(e) => { if (e.target === e.currentTarget) setShowForm(false); }}>
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
+        <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowForm(false)} />
           <form onSubmit={handleCreate} className={`relative mobile-sheet lg:rounded-3xl lg:max-w-lg lg:mx-4 lg:relative lg:bottom-auto p-6 space-y-4 animate-[pageIn_0.25s_ease-out] ${industrySpec?.border || ""}`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -303,6 +313,23 @@ export default function LeadsPage() {
               <p className="text-[10px] text-emerald-600 flex items-center gap-1">
                 📍 {parseFloat(form.latitude).toFixed(5)}, {parseFloat(form.longitude).toFixed(5)}
               </p>
+            )}
+
+            {/* Industry selector — always visible so user can pick industry type */}
+            {!industrySpec && (
+              <div className="border-t border-surface-200 dark:border-surface-700 pt-3 mt-2">
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Jenis Industri</p>
+                <select
+                  value={form.industry || ""}
+                  onChange={(e) => setForm({...form, industry: e.target.value})}
+                  className="w-full px-3 py-2 rounded-xl bg-surface-50 dark:bg-surface-900 ring-1 ring-surface-200 dark:ring-surface-700 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                >
+                  <option value="">Umum (tanpa industri)</option>
+                  {Object.entries(INDUSTRIES).map(([id, spec]) => (
+                    <option key={id} value={id}>{spec.label}</option>
+                  ))}
+                </select>
+              </div>
             )}
 
             <IndustryFields form={form} setForm={setForm} />

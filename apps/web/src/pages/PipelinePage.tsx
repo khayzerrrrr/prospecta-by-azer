@@ -193,8 +193,8 @@ export default function PipelinePage() {
 
       {/* Create Deal Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center" onClick={(e) => { if (e.target === e.currentTarget) setShowForm(false); }}>
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
+        <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowForm(false)} />
           <form onSubmit={handleCreate} className={`relative mobile-sheet lg:rounded-3xl lg:max-w-md lg:mx-4 lg:relative lg:bottom-auto p-6 space-y-4 ${industrySpec?.border || ""}`}>
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">

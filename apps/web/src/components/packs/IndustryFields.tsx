@@ -37,7 +37,7 @@ export const INDUSTRIES: Record<string, IndustrySpec> = {
     companyLabel: "Nama Sekolah / Institusi",
     companyPlaceholder: "contoh: SMA Negeri 1 Jakarta",
     contactLabel: "PIC Sekolah",
-    contactRoles: ["Kepala Sekolah", "Wakasek Kurikulum", "Wakasek Sarana", "Kepala Perpustakaan", "Kepala TU", "Staff IT", "Guru", "Bendahara BOS"],
+    contactRoles: ["Kepala Sekolah", "Wakasek Kurikulum", "Wakasek Sarana", "Ketua Yayasan", "Pengurus Yayasan", "Kepala Perpustakaan", "Kepala TU", "Staff IT", "Guru", "Bendahara BOS", "Komite Sekolah"],
     leadFields: [
       { key: "eduBizType", label: "Jenis Bisnis *", placeholder: "Pilih jenis bisnis", type: "select", options: ["Sales BUKU", "Program Sekolah", "Software Sekolah", "Pengadaan Barang"], required: true, col: "full" },
       { key: "schoolType", label: "Status Sekolah", placeholder: "Pilih", type: "select", options: ["Negeri", "Swasta", "Madrasah", "Pesantren", "Internasional"], required: true, col: "half" },
@@ -332,6 +332,19 @@ export const INDUSTRIES: Record<string, IndustrySpec> = {
   },
 };
 
+// Static Tailwind ring color map (dynamic classes don't work with JIT)
+const focusRing: Record<string, string> = {
+  violet: "focus:ring-violet-500",
+  emerald: "focus:ring-emerald-500",
+  rose: "focus:ring-rose-500",
+  amber: "focus:ring-amber-500",
+  blue: "focus:ring-blue-500",
+  slate: "focus:ring-slate-500",
+  pink: "focus:ring-pink-500",
+  cyan: "focus:ring-cyan-500",
+  orange: "focus:ring-orange-500",
+};
+
 export function IndustryFields({ form, setForm }: IndustryFieldsProps) {
   const enabledPacks = usePackStore((s) => s.enabledPacks);
   const isLoading = usePackStore((s) => s.isLoading);
@@ -339,6 +352,7 @@ export function IndustryFields({ form, setForm }: IndustryFieldsProps) {
     ["education", "banking", "healthcare", "property", "automotive", "manufacturing", "retail", "saas", "distributor"].includes(k)
   );
   const spec = activeIndustryId ? INDUSTRIES[activeIndustryId] : null;
+  const ringColor = spec ? (focusRing[spec.color] || "focus:ring-brand-500") : "focus:ring-brand-500";
 
   // Show loading while packs are being fetched
   if (isLoading) {
@@ -375,7 +389,7 @@ export function IndustryFields({ form, setForm }: IndustryFieldsProps) {
                 value={form[f.key] || ""}
                 onChange={(e) => update(f.key, e.target.value)}
                 required={f.required}
-                className={`w-full px-3 py-2 rounded-xl bg-surface-50 dark:bg-surface-900 ring-1 ring-surface-200 dark:ring-surface-700 text-xs focus:ring-2 focus:ring-${spec.color}-500 focus:outline-none`}
+                className={`w-full px-3 py-2 rounded-xl bg-surface-50 dark:bg-surface-900 ring-1 ring-surface-200 dark:ring-surface-700 text-xs focus:ring-2 ${ringColor} focus:outline-none`}
               >
                 <option value="">{f.placeholder}</option>
                 {f.options?.map((o) => <option key={o} value={o}>{o}</option>)}
@@ -387,7 +401,7 @@ export function IndustryFields({ form, setForm }: IndustryFieldsProps) {
                 onChange={(e) => update(f.key, e.target.value)}
                 placeholder={f.placeholder}
                 required={f.required}
-                className={`w-full px-3 py-2 rounded-xl bg-surface-50 dark:bg-surface-900 ring-1 ring-surface-200 dark:ring-surface-700 text-xs focus:ring-2 focus:ring-${spec.color}-500 focus:outline-none`}
+                className={`w-full px-3 py-2 rounded-xl bg-surface-50 dark:bg-surface-900 ring-1 ring-surface-200 dark:ring-surface-700 text-xs focus:ring-2 ${ringColor} focus:outline-none`}
               />
             )}
           </div>

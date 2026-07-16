@@ -62,11 +62,14 @@ export function Sidebar() {
   const role = user?.role || "agent";
 
   const [coreExpanded, setCoreExpanded] = useState(true);
-  const [industryExpanded, setIndustryExpanded] = useState(false);
   const [aiExpanded, setAiExpanded] = useState(false);
   const { activePack, openPack, closePack } = usePackStore();
   const activeIndustry = activePack?.type === "industry" ? activePack.id : null;
   const activeAi = activePack?.type === "ai" ? activePack.id : null;
+  const enabledPacks = usePackStore((s) => s.enabledPacks);
+  const isPackEnabled = (prefix: string, id: string) => !!enabledPacks[id];
+  const hasAnyIndustryPack = industryPacks.some(p => isPackEnabled("industry", p.id));
+  const [industryExpanded, setIndustryExpanded] = useState(hasAnyIndustryPack);
 
   const handleIndustryClick = (id: string, label: string, color: string) => {
     if (activeIndustry === id) { closePack(); return; }
@@ -76,9 +79,6 @@ export function Sidebar() {
     if (activeAi === id) { closePack(); return; }
     openPack("ai", id, label, color);
   };
-
-  const enabledPacks = usePackStore((s) => s.enabledPacks);
-  const isPackEnabled = (prefix: string, id: string) => !!enabledPacks[id];
 
   const visibleCore = coreModules.filter((m) => m.roles.includes(role));
 
@@ -168,25 +168,44 @@ export function Sidebar() {
           )}
           {(industryExpanded || !sidebarOpen) && (
             <div className="space-y-0.5">
-              {industryPacks.map(({ id, icon: Icon, label, color }) => (
-                <button
-                  key={id}
-                  onClick={() => handleIndustryClick(id, label, color)}
-                  className={cn(
-                    "flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all w-full text-left",
-                    activeIndustry === id
-                      ? "bg-white/10 text-white"
-                      : "text-slate-500 hover:bg-white/5 hover:text-slate-300",
-                    !sidebarOpen && "justify-center px-2",
-                  )}
-                >
-                  <Icon size={15} className={cn(color, (activeIndustry === id || isPackEnabled("industry", id)) && "opacity-100")} />
-                  {sidebarOpen && <span className="flex-1">{label}</span>}
-                  {sidebarOpen && isPackEnabled("industry", id) && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  )}
-                </button>
-              ))}
+              {industryPacks.map(({ id, icon: Icon, label, color }) => {
+                const installed = isPackEnabled("industry", id);
+                return (
+                  <button
+                    key={id}
+                    onClick={() => handleIndustryClick(id, label, color)}
+                    className={cn(
+                      "flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all w-full text-left",
+                      activeIndustry === id
+                        ? "bg-white/10 text-white"
+                        : installed
+                          ? "text-slate-300 hover:bg-white/5 hover:text-white"
+                          : "text-slate-600 hover:bg-white/5 hover:text-slate-400",
+                      !sidebarOpen && "justify-center px-2",
+                    )}
+                  >
+                    <Icon size={15} className={cn(
+                      color,
+                      installed ? "opacity-100" : "opacity-40",
+                      activeIndustry === id && "drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]",
+                    )} />
+                    {sidebarOpen && (
+                      <>
+                        <span className="flex-1">{label}</span>
+                        {installed ? (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
+                            ✓ Aktif
+                          </span>
+                        ) : (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-700 text-slate-500 font-medium border border-slate-600">
+                            Install
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>

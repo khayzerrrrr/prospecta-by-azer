@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
+import { usePackStore } from "../stores/packStore";
 import { api } from "../services/api";
-import { MapPin, TrendingUp, DollarSign, ClipboardCheck, Calendar, ArrowRight, Plus, Shield, Target, Sparkles, Lightbulb, ChevronRight } from "lucide-react";
+import { MapPin, TrendingUp, DollarSign, ClipboardCheck, Calendar, ArrowRight, Plus, Shield, Target, Sparkles, Lightbulb, ChevronRight, GraduationCap, Store, Heart, Home, Car, Factory, ShoppingBag, Cloud, Truck, CheckCircle2, Circle } from "lucide-react";
 import { AgentMap } from "../components/dashboard/AgentMap";
 import { ManagerLiveMap } from "../components/dashboard/ManagerLiveMap";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
@@ -79,7 +80,26 @@ export default function Dashboard() {
     ],
   };
 
-  const stats = statsByRole[role] || statsByRole.agent;
+  const stats = statsByRole[role] || statsByRole.agent!;
+
+  // Get installed industry packs for the banner
+  const enabledPacks = usePackStore((s) => s.enabledPacks);
+  const industryIcons: Record<string, any> = {
+    education: GraduationCap, banking: Store, healthcare: Heart, property: Home,
+    automotive: Car, manufacturing: Factory, retail: ShoppingBag, saas: Cloud, distributor: Truck,
+  };
+  const industryColors: Record<string, string> = {
+    education: "bg-violet-50 border-violet-200 text-violet-700 dark:bg-violet-900/20 dark:border-violet-800 dark:text-violet-400",
+    banking: "bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800 dark:text-emerald-400",
+    healthcare: "bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800 dark:text-rose-400",
+    property: "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-400",
+    automotive: "bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-400",
+    manufacturing: "bg-slate-100 border-slate-200 text-slate-700 dark:bg-slate-900/20 dark:border-slate-800 dark:text-slate-400",
+    retail: "bg-pink-50 border-pink-200 text-pink-700 dark:bg-pink-900/20 dark:border-pink-800 dark:text-pink-400",
+    saas: "bg-cyan-50 border-cyan-200 text-cyan-700 dark:bg-cyan-900/20 dark:border-cyan-800 dark:text-cyan-400",
+    distributor: "bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-400",
+  };
+  const installedIndustries = Object.keys(enabledPacks).filter(k => industryIcons[k]);
 
   return (
     <div className="page-enter space-y-5">
@@ -111,6 +131,48 @@ export default function Dashboard() {
         </button>
       </div>
 
+      {/* Installed Industry Packs Banner */}
+      <div className="rounded-2xl bg-white dark:bg-surface-800 shadow-elevation-low border border-surface-200 dark:border-surface-700 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Sparkles size={14} className="text-brand-500" />
+            <h3 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Industry Packs</h3>
+          </div>
+          {installedIndustries.length > 0 ? (
+            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">
+              {installedIndustries.length} Aktif
+            </span>
+          ) : (
+            <span className="text-[10px] font-medium text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">
+              Belum diinstal
+            </span>
+          )}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+          {Object.entries(industryIcons).map(([id, Icon]) => {
+            const installed = !!enabledPacks[id];
+            return (
+              <div
+                key={id}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
+                  installed
+                    ? industryColors[id]
+                    : "border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-600 bg-slate-50 dark:bg-surface-700/50 opacity-60"
+                }`}
+              >
+                {installed ? (
+                  <CheckCircle2 size={14} className="text-emerald-500 shrink-0" />
+                ) : (
+                  <Circle size={14} className="text-slate-300 dark:text-slate-600 shrink-0" />
+                )}
+                <Icon size={16} className={installed ? "shrink-0" : "shrink-0 opacity-50"} />
+                <span className="capitalize truncate">{id}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
         {stats.map(({ label, value, icon: Icon, bg, text, onClick }) => (
@@ -136,11 +198,9 @@ export default function Dashboard() {
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
               {role === "manager" ? "Aktivitas Tim (14 Hari)" : "Aktivitas Kunjungan (14 Hari)"}
             </h3>
-            {role !== "agent" && (
-              <button onClick={() => navigate("/analytics")} className="lg:hidden flex items-center gap-1 text-xs text-brand-600 font-medium">
-                Detail <ArrowRight size={12} />
-              </button>
-            )}
+            <button onClick={() => navigate("/analytics")} className="lg:hidden flex items-center gap-1 text-xs text-brand-600 font-medium">
+              Detail <ArrowRight size={12} />
+            </button>
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={trends}>
@@ -158,7 +218,7 @@ export default function Dashboard() {
         <div className="mobile-card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-              {role === "agent" ? "Jadwal Saya" : "Jadwal Hari Ini"}
+              {"Jadwal Hari Ini"}
             </h3>
             <button onClick={() => navigate("/visits")} className="w-7 h-7 rounded-lg bg-brand-50 dark:bg-brand-900/30 flex items-center justify-center text-brand-600">
               <Plus size={16} />
