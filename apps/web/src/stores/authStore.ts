@@ -18,7 +18,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
 
   login: async (email, password) => {
-    const res = await fetch("/api/auth/login", {
+    const base = import.meta.env.VITE_API_URL || "/api";
+    const res = await fetch(`${base}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -52,7 +53,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       return;
     }
     try {
-      const res = await fetch("/api/auth/me", {
+      const base = import.meta.env.VITE_API_URL || "/api";
+    const res = await fetch(`${base}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
         credentials: "include",
       });
