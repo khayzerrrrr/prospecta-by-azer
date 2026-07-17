@@ -9,7 +9,7 @@ import {
   Route, ClipboardCheck, BarChart3, Map, Settings, ChevronLeft,
   ChevronDown, Sparkles, Building2, Zap, Bot, FileText, Mic,
   TrendingUp, Brain, Store, GraduationCap, Heart, Home, Car,
-  Factory, ShoppingBag, Cloud, Truck, UserCog, Fingerprint, Wallet,
+  Factory, ShoppingBag, Cloud, Truck, UserCog, Fingerprint, Wallet, Target,
 } from "lucide-react";
 
 // ── Role-based visibility ──
@@ -35,6 +35,7 @@ const coreModules = [
   { to: "/employees", icon: UserCog, label: "Karyawan", roles: ["super_admin", "admin", "manager"], description: "HR & Penggajian" },
   { to: "/payroll", icon: Wallet, label: "Payroll", roles: ["super_admin", "admin"] },
   { to: "/payroll", icon: Wallet, label: "Slip Gaji", roles: ["manager", "agent"] },
+  { to: "/kpi", icon: Target, label: "KPI", roles: ["super_admin", "admin", "manager", "agent"] },
   { to: "/settings", icon: Settings, label: "Pengaturan", roles: ["super_admin", "admin"] },
 ];
 

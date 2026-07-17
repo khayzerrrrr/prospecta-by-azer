@@ -18,3 +18,5 @@ export { salaryComponents } from "./salary-components";
 export { employeeSalaryComponents } from "./employee-salary-components";
 export { payrollRuns } from "./payroll-runs";
 export { payslips } from "./payslips";
+export { kpiDefinitions } from "./kpi-definitions";
+export { kpiScores } from "./kpi-scores";
