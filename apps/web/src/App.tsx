@@ -23,6 +23,7 @@ const AttendancePage = lazy(() => import("./pages/AttendancePage"));
 const PayrollPage = lazy(() => import("./pages/PayrollPage"));
 const PayrollRunDetailPage = lazy(() => import("./pages/PayrollRunDetailPage"));
 const PayslipDetailPage = lazy(() => import("./pages/PayslipDetailPage"));
+const KpiPage = lazy(() => import("./pages/KpiPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 
@@ -65,6 +66,7 @@ export default function App() {
         <Route path="/payroll" element={<Suspense fallback={<LoadingPage />}><PayrollPage /></Suspense>} />
         <Route path="/payroll/runs/:id" element={<Suspense fallback={<LoadingPage />}><PayrollRunDetailPage /></Suspense>} />
         <Route path="/payroll/payslips/:id" element={<Suspense fallback={<LoadingPage />}><PayslipDetailPage /></Suspense>} />
+        <Route path="/kpi" element={<Suspense fallback={<LoadingPage />}><KpiPage /></Suspense>} />
         <Route path="/settings" element={<Suspense fallback={<LoadingPage />}><SettingsPage /></Suspense>} />
         <Route path="/profile" element={<Suspense fallback={<LoadingPage />}><ProfilePage /></Suspense>} />
       </Route>

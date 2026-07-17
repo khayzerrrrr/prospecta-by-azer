@@ -12,6 +12,7 @@ import { employeeRoutes } from "./routes/employees.route";
 import { officeLocationRoutes } from "./routes/office-locations.route";
 import { attendanceRoutes } from "./routes/attendance.route";
 import { payrollRoutes } from "./routes/payroll.route";
+import { kpiRoutes } from "./routes/kpi.route";
 import { env } from "./config/env";
 import { wsServer } from "./ws";
 import { HttpError } from "./utils/errors";
@@ -51,6 +52,7 @@ export const app = new Elysia()
     .use(officeLocationRoutes)
     .use(attendanceRoutes)
     .use(payrollRoutes)
+    .use(kpiRoutes)
   )
   .use(wsServer)
   .get("/health", () => ({ status: "ok", timestamp: new Date().toISOString() }));
