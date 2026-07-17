@@ -22,6 +22,7 @@ const rolePermissions: Record<UserSession["role"], Permission[]> = {
     "employees:read", "employees:write",
     "office-locations:read", "office-locations:write",
     "attendance:read", "attendance:write", "attendance:checkin",
+    "payroll:read", "payroll:write",
   ],
   manager: [
     "leads:read", "leads:write", "leads:import",
@@ -35,6 +36,7 @@ const rolePermissions: Record<UserSession["role"], Permission[]> = {
     "employees:read",
     "office-locations:read",
     "attendance:read", "attendance:checkin",
+    "payroll:read",
   ],
   agent: [
     "leads:read", "leads:write",
@@ -47,6 +49,7 @@ const rolePermissions: Record<UserSession["role"], Permission[]> = {
     "users:read",
     "office-locations:read",
     "attendance:read", "attendance:checkin",
+    "payroll:read",
   ],
 };
 
