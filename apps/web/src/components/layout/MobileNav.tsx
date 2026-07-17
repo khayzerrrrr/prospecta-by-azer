@@ -17,6 +17,8 @@ const allQuickActions = [
   { label: "Kunjungan Baru", href: "/visits", roles: ["super_admin", "admin", "manager", "agent"] },
   { label: "Deal Baru", href: "/pipeline", roles: ["super_admin", "admin", "manager", "agent"] },
   { label: "Karyawan", href: "/employees", roles: ["super_admin", "admin", "manager"] },
+  { label: "Payroll", href: "/payroll", roles: ["super_admin", "admin"] },
+  { label: "Slip Gaji", href: "/payroll", roles: ["manager", "agent"] },
 ];
 
 export function MobileNav() {

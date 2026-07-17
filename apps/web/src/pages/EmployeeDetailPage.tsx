@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 import { formatIDR, initials } from "@visitflow/utils";
-import { ArrowLeft, Camera, Wallet, CreditCard, Save, Power } from "lucide-react";
+import { ArrowLeft, Camera, Wallet, CreditCard, Save, Power, Plus, X, Tag } from "lucide-react";
 
 function Avatar({ name, url, size = 88 }: { name: string; url?: string | null; size?: number }) {
   if (url) return <img src={url} alt={name} className="rounded-full object-cover shrink-0" style={{ width: size, height: size }} />;
@@ -24,6 +24,43 @@ export default function EmployeeDetailPage() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [assignedComponents, setAssignedComponents] = useState<any[]>([]);
+  const [allComponents, setAllComponents] = useState<any[]>([]);
+  const [showAssign, setShowAssign] = useState(false);
+  const [assignForm, setAssignForm] = useState({ componentId: "", amountOverride: "" });
+
+  const fetchComponents = async () => {
+    try {
+      const [assignedRes, allRes] = await Promise.all([
+        api.get<any>(`/payroll/employees/${id}/components`),
+        api.get<any>("/payroll/components"),
+      ]);
+      setAssignedComponents(assignedRes.data || []);
+      setAllComponents((allRes.data || []).filter((c: any) => c.isActive));
+    } catch { /* non-HR roles get 403 here, which is fine — section stays empty */ }
+  };
+
+  const handleAssignComponent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assignForm.componentId) return;
+    try {
+      await api.post(`/payroll/employees/${id}/components`, {
+        componentId: assignForm.componentId,
+        amountOverride: assignForm.amountOverride ? Number(assignForm.amountOverride) : undefined,
+      });
+      setShowAssign(false);
+      setAssignForm({ componentId: "", amountOverride: "" });
+      fetchComponents();
+    } catch (e: any) { alert(e.message || "Gagal assign komponen"); }
+  };
+
+  const handleUnassignComponent = async (componentId: string) => {
+    try {
+      await api.delete(`/payroll/employees/${id}/components/${componentId}`);
+      fetchComponents();
+    } catch (e: any) { alert(e.message); }
+  };
+
   const [form, setForm] = useState({
     employeeType: "field", employmentStatus: "active", baseSalary: "",
     taxStatus: "TK/0", npwp: "", bankName: "", bankAccountNumber: "", bankAccountName: "",
@@ -43,6 +80,7 @@ export default function EmployeeDetailPage() {
       });
       setIsLoading(false);
     }).catch(() => setIsLoading(false));
+    fetchComponents();
   }, [id]);
 
   const handlePhotoPick = (file: File) => {
@@ -141,6 +179,32 @@ export default function EmployeeDetailPage() {
         </div>
       </div>
 
+      {/* Salary components section */}
+      {allComponents.length > 0 && (
+        <div className="bg-white dark:bg-surface-800 rounded-2xl shadow-elevation-low p-6 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2"><Tag size={16} /> Komponen Gaji</h3>
+            <button onClick={() => setShowAssign(true)} className="p-1.5 rounded-lg bg-brand-50 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400">
+              <Plus size={16} />
+            </button>
+          </div>
+          {assignedComponents.length === 0 && <p className="text-xs text-slate-500">Belum ada komponen gaji untuk karyawan ini</p>}
+          <div className="space-y-2">
+            {assignedComponents.map((a) => (
+              <div key={a.id} className="flex items-center justify-between p-2.5 rounded-xl bg-surface-50 dark:bg-surface-900">
+                <div>
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">{a.component.name}</p>
+                  <p className="text-xs text-slate-500">
+                    {a.amountOverride != null ? formatIDR(a.amountOverride) : a.component.amountType === "percentage_of_base" ? `${a.component.defaultAmount}% gaji pokok` : formatIDR(a.component.defaultAmount)}
+                  </p>
+                </div>
+                <button onClick={() => handleUnassignComponent(a.componentId)} className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"><X size={14} /></button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Bank section */}
       <div className="bg-white dark:bg-surface-800 rounded-2xl shadow-elevation-low p-6 space-y-4">
         <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2"><CreditCard size={16} /> Rekening Bank</h3>
@@ -165,6 +229,31 @@ export default function EmployeeDetailPage() {
           <Save size={16} /> {saving ? "Menyimpan..." : "Simpan Perubahan"}
         </button>
       </div>
+
+      {showAssign && (
+        <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowAssign(false)} />
+          <form onSubmit={handleAssignComponent} className="relative mobile-sheet lg:rounded-3xl lg:max-w-sm lg:mx-4 lg:relative lg:bottom-auto p-6 space-y-4 animate-[pageIn_0.25s_ease-out]">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Tambah Komponen Gaji</h2>
+              <button type="button" onClick={() => setShowAssign(false)} className="p-2 rounded-xl hover:bg-surface-100 dark:hover:bg-surface-700"><X size={20} /></button>
+            </div>
+            <select required value={assignForm.componentId} onChange={(e) => setAssignForm({ ...assignForm, componentId: e.target.value })}
+              className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-900 ring-1 ring-surface-200 dark:ring-surface-700 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+              <option value="">Pilih komponen...</option>
+              {allComponents.filter((c) => !assignedComponents.some((a) => a.componentId === c.id)).map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <input type="number" value={assignForm.amountOverride} onChange={(e) => setAssignForm({ ...assignForm, amountOverride: e.target.value })}
+              placeholder="Nominal khusus (opsional, kosongkan untuk default)"
+              className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-900 ring-1 ring-surface-200 dark:ring-surface-700 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" />
+            <button type="submit" className="w-full py-3 rounded-xl text-white font-semibold active:scale-[0.98] transition-all bg-brand-600 hover:bg-brand-700 shadow-lg shadow-brand-500/25">
+              Tambahkan
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
