@@ -39,3 +39,6 @@ data/
 *.db-wal
 
 .vercel
+
+.vercel
+.env*

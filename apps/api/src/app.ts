@@ -8,6 +8,9 @@ import { pipelineRoutes } from "./routes/pipeline.route";
 import { routeRoutes } from "./routes/routes.route";
 import { analyticsRoutes } from "./routes/analytics.route";
 import { packRoutes } from "./routes/packs.route";
+import { employeeRoutes } from "./routes/employees.route";
+import { officeLocationRoutes } from "./routes/office-locations.route";
+import { attendanceRoutes } from "./routes/attendance.route";
 import { env } from "./config/env";
 import { wsServer } from "./ws";
 import { HttpError } from "./utils/errors";
@@ -43,6 +46,9 @@ export const app = new Elysia()
     .use(routeRoutes)
     .use(analyticsRoutes)
     .use(packRoutes)
+    .use(employeeRoutes)
+    .use(officeLocationRoutes)
+    .use(attendanceRoutes)
   )
   .use(wsServer)
   .get("/health", () => ({ status: "ok", timestamp: new Date().toISOString() }));
