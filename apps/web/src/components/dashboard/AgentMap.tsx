@@ -50,23 +50,16 @@ export function AgentMap() {
     }
     load();
 
-    // Auto-start GPS tracking
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => setCurrentPos([pos.coords.latitude, pos.coords.longitude]),
-        () => {},
-        { enableHighAccuracy: true },
-      );
-      trackingInterval.current = setInterval(() => {
-        navigator.geolocation.getCurrentPosition(
-          (pos) => setCurrentPos([pos.coords.latitude, pos.coords.longitude]),
-          () => {},
-          { enableHighAccuracy: true, timeout: 5000 },
-        );
-      }, 15000);
-    }
+    const reportPosition = (pos: GeolocationPosition) => {
+      const { latitude, longitude } = pos.coords;
+      setCurrentPos([latitude, longitude]);
+      const ws = wsRef.current;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "location_update", payload: { latitude, longitude } }));
+      }
+    };
 
-    // Auto-connect WebSocket
+    // Auto-connect WebSocket first so the first GPS fix has somewhere to send to
     try {
       const token = localStorage.getItem("access_token");
       const ws = new WebSocket(`${WS_URL}?token=${token}`);
@@ -74,6 +67,14 @@ export function AgentMap() {
       ws.onclose = () => setWsConnected(false);
       wsRef.current = ws;
     } catch {}
+
+    // Auto-start GPS tracking
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(reportPosition, () => {}, { enableHighAccuracy: true });
+      trackingInterval.current = setInterval(() => {
+        navigator.geolocation.getCurrentPosition(reportPosition, () => {}, { enableHighAccuracy: true, timeout: 5000 });
+      }, 15000);
+    }
 
     return () => {
       if (trackingInterval.current) clearInterval(trackingInterval.current);

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../services/api";
+import { API_BASE_URL } from "../services/config";
+import { queueOperation } from "../services/offline";
 import { usePackStore } from "../stores/packStore";
 import { EduVisitForm } from "../components/packs/EduVisitForm";
 import { MapPin, Clock, Calendar, ArrowLeft, PenLine, CheckCircle, Crosshair, Camera, Navigation } from "lucide-react";
@@ -45,13 +47,27 @@ export default function VisitDetailPage() {
     });
   };
 
+  // Network-level failures (offline, DNS down, etc.) surface as a raw
+  // TypeError from fetch — distinct from the app's own thrown Errors for
+  // API-level failures (4xx/5xx), which should still show as a real error.
+  const isOffline = (e: any) => !navigator.onLine || e instanceof TypeError;
+
   const handleCheckin = async () => {
     setCheckingIn(true);
     try {
       const coords = await getLocation();
-      await api.post(`/visits/${id}/checkin`, coords);
-      const res = await api.get<any>(`/visits/${id}`);
-      setVisit(res.data);
+      try {
+        await api.post(`/visits/${id}/checkin`, coords);
+        const res = await api.get<any>(`/visits/${id}`);
+        setVisit(res.data);
+      } catch (e: any) {
+        if (isOffline(e)) {
+          await queueOperation({ type: "visit:checkin", endpoint: `${API_BASE_URL}/visits/${id}/checkin`, method: "POST", payload: coords });
+          alert("Sedang offline — check-in disimpan dan akan otomatis terkirim saat koneksi kembali.");
+        } else {
+          throw e;
+        }
+      }
     } catch (e: any) { alert(e.message || "Check-in gagal"); }
     setCheckingIn(false);
   };
@@ -60,9 +76,19 @@ export default function VisitDetailPage() {
     setCheckingOut(true);
     try {
       const coords = await getLocation();
-      await api.post(`/visits/${id}/checkout`, { ...coords, meetingNotes: notes, nextSteps });
-      const res = await api.get<any>(`/visits/${id}`);
-      setVisit(res.data);
+      const payload = { ...coords, meetingNotes: notes, nextSteps };
+      try {
+        await api.post(`/visits/${id}/checkout`, payload);
+        const res = await api.get<any>(`/visits/${id}`);
+        setVisit(res.data);
+      } catch (e: any) {
+        if (isOffline(e)) {
+          await queueOperation({ type: "visit:checkout", endpoint: `${API_BASE_URL}/visits/${id}/checkout`, method: "POST", payload });
+          alert("Sedang offline — check-out disimpan dan akan otomatis terkirim saat koneksi kembali.");
+        } else {
+          throw e;
+        }
+      }
     } catch (e: any) { alert(e.message || "Check-out gagal"); }
     setCheckingOut(false);
   };

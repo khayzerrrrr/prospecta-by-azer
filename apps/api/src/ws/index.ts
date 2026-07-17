@@ -22,8 +22,12 @@ export const wsServer = new Elysia()
         (ws.data as any).userId = payload.sub;
         (ws.data as any).role = payload.role;
         (ws.data as any).fullName = payload.fullName;
+        (ws.data as any).companyId = payload.companyId;
 
         joinRoom(`user:${payload.sub}`, ws as any);
+        // Company-scoped room so location broadcasts reach teammates
+        // (e.g. managers watching the live map), not just the sender.
+        if (payload.companyId) joinRoom(`company:${payload.companyId}`, ws as any);
 
         console.log(`WS: ${payload.fullName} connected`);
       } catch {
@@ -42,14 +46,17 @@ export const wsServer = new Elysia()
 
         if (data.type === "location_update") {
           const { latitude, longitude } = data.payload || {};
-          broadcast(`user:${(ws.data as any).userId}`, JSON.stringify({
-            type: "agent_location",
-            userId: (ws.data as any).userId,
-            fullName: (ws.data as any).fullName,
-            latitude,
-            longitude,
-            timestamp: new Date().toISOString(),
-          }));
+          const companyId = (ws.data as any).companyId;
+          if (companyId) {
+            broadcast(`company:${companyId}`, JSON.stringify({
+              type: "agent_location",
+              userId: (ws.data as any).userId,
+              fullName: (ws.data as any).fullName,
+              latitude,
+              longitude,
+              timestamp: new Date().toISOString(),
+            }));
+          }
         }
       } catch {}
     },

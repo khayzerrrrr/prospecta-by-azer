@@ -1,6 +1,7 @@
 import { useEffect, lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import { useAuthStore } from "./stores/authStore";
+import { listenForReconnect, syncQueue } from "./services/offline";
 import { AppShell } from "./components/layout/AppShell";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -32,6 +33,8 @@ export default function App() {
 
   useEffect(() => {
     checkAuth();
+    listenForReconnect();
+    if (navigator.onLine) syncQueue();
   }, []);
 
   return (

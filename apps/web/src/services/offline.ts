@@ -68,12 +68,14 @@ export async function syncQueue(): Promise<number> {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(op.payload),
       });
-      // Only delete on success (2xx). Keep 4xx/5xx for retry.
       if (res.ok) {
         store.delete(op.id);
         synced++;
+      } else if (res.status === 401) {
+        // Expired/invalid token — keep queued rather than discard the
+        // user's check-in data. Retries once they've re-authenticated.
       } else if (res.status >= 400 && res.status < 500) {
-        // Client error (4xx) — don't retry, log it
+        // Other client errors (4xx) — not retryable, log and drop
         console.warn(`Offline sync failed (4xx) for ${op.type}:`, await res.text().catch(() => ""));
         store.delete(op.id);
         synced++;
