@@ -1,17 +1,18 @@
 import { useState, useEffect } from "react";
 import { api } from "../services/api";
-import { MoveRight, Plus, X, ChevronRight } from "lucide-react";
-import { usePackStore } from "../stores/packStore";
-import { INDUSTRIES } from "../components/packs/IndustryFields";
+import { MoveRight, Plus, X } from "lucide-react";
+import { useAuthStore } from "../stores/authStore";
+import { INDUSTRIES } from "@visitflow/shared/industries";
 
 interface Stage { id: string; name: string; order: number; color: string; emoji: string | null; probability: number }
 
 export default function PipelinePage() {
-  const enabledPacks = usePackStore((s) => s.enabledPacks);
-  const activeIndustryId = Object.keys(enabledPacks).find((k) =>
-    ["education", "banking", "healthcare", "property", "automotive", "manufacturing", "retail", "saas", "distributor"].includes(k)
-  );
-  const industrySpec = activeIndustryId ? INDUSTRIES[activeIndustryId] : null;
+  // Cosmetic theming only — real stages always come from the database
+  // (seeded per-industry at company provisioning time), never overridden
+  // client-side. See rbac.ts plan notes: synthetic stage IDs used to violate
+  // deals.stage_id's FK constraint the moment a deal was moved.
+  const companyIndustry = useAuthStore((s) => s.user?.industry);
+  const industrySpec = companyIndustry ? INDUSTRIES[companyIndustry] : null;
 
   const [stages, setStages] = useState<Stage[]>([]);
   const [deals, setDeals] = useState<any[]>([]);
@@ -30,19 +31,7 @@ export default function PipelinePage() {
         api.get<any>("/leads?perPage=100"),
       ]);
 
-      // Use industry-specific stages if pack is active
-      if (industrySpec) {
-        setStages(industrySpec.pipelineStages.map((st, i) => ({
-          id: `${activeIndustryId}-${i}`,
-          name: st.name,
-          order: i + 1,
-          color: st.color,
-          emoji: st.emoji,
-          probability: st.probability,
-        })));
-      } else {
-        setStages((s.data || []).sort((a: Stage, b: Stage) => a.order - b.order));
-      }
+      setStages((s.data || []).sort((a: Stage, b: Stage) => a.order - b.order));
       setDeals(d.data || []);
       setLeads(l.data || []);
     } catch {}

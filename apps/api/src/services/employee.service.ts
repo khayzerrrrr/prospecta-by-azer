@@ -1,17 +1,29 @@
 import { db, users, employeeProfiles } from "@visitflow/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray, or } from "drizzle-orm";
+import { getSubordinateUserIds } from "../middleware/rbac";
+import { getJobTitleLevel } from "@visitflow/shared/constants/job-titles";
 
 
 class EmployeeService {
   async list(user: any) {
     const conditions = [eq(employeeProfiles.companyId, user.companyId)];
     if (user.role === "manager") {
-      if (!user.territoryId) return [];
-      conditions.push(eq(users.territoryId, user.territoryId));
+      // Union of: territory teammates, (hierarchy) subordinate job titles —
+      // a territory-less manager isn't automatically blocked from seeing
+      // anyone their job title outranks.
+      const scopeConditions: any[] = [];
+      if (user.territoryId) scopeConditions.push(eq(users.territoryId, user.territoryId));
+      const viewerLevel = getJobTitleLevel(user.jobTitle);
+      if (viewerLevel > 1) {
+        const subordinateIds = await getSubordinateUserIds(user.companyId, viewerLevel);
+        if (subordinateIds.length > 0) scopeConditions.push(inArray(users.id, subordinateIds));
+      }
+      if (scopeConditions.length === 0) return [];
+      conditions.push(or(...scopeConditions)!);
     }
     const rows = await db.select({
       profile: employeeProfiles,
-      user: { id: users.id, email: users.email, fullName: users.fullName, phone: users.phone, role: users.role, isActive: users.isActive, territoryId: users.territoryId, avatarUrl: users.avatarUrl },
+      user: { id: users.id, email: users.email, fullName: users.fullName, phone: users.phone, role: users.role, isActive: users.isActive, territoryId: users.territoryId, avatarUrl: users.avatarUrl, jobTitle: users.jobTitle },
     }).from(employeeProfiles)
       .innerJoin(users, eq(employeeProfiles.userId, users.id))
       .where(and(...conditions));
@@ -21,7 +33,7 @@ class EmployeeService {
   async getById(id: string) {
     const [row] = await db.select({
       profile: employeeProfiles,
-      user: { id: users.id, email: users.email, fullName: users.fullName, phone: users.phone, role: users.role, isActive: users.isActive, territoryId: users.territoryId, avatarUrl: users.avatarUrl },
+      user: { id: users.id, email: users.email, fullName: users.fullName, phone: users.phone, role: users.role, isActive: users.isActive, territoryId: users.territoryId, avatarUrl: users.avatarUrl, jobTitle: users.jobTitle },
     }).from(employeeProfiles)
       .innerJoin(users, eq(employeeProfiles.userId, users.id))
       .where(eq(employeeProfiles.id, id));
@@ -32,7 +44,7 @@ class EmployeeService {
   async getByUserId(userId: string) {
     const [row] = await db.select({
       profile: employeeProfiles,
-      user: { id: users.id, email: users.email, fullName: users.fullName, phone: users.phone, role: users.role, isActive: users.isActive, territoryId: users.territoryId, avatarUrl: users.avatarUrl },
+      user: { id: users.id, email: users.email, fullName: users.fullName, phone: users.phone, role: users.role, isActive: users.isActive, territoryId: users.territoryId, avatarUrl: users.avatarUrl, jobTitle: users.jobTitle },
     }).from(employeeProfiles)
       .innerJoin(users, eq(employeeProfiles.userId, users.id))
       .where(eq(employeeProfiles.userId, userId));
@@ -56,11 +68,13 @@ class EmployeeService {
       fullName: data.fullName, phone: data.phone || null, role,
       territoryId: data.territoryId || null,
       avatarUrl: data.avatarUrl || null,
+      jobTitle: data.jobTitle || null,
     });
 
     const [profile] = await db.insert(employeeProfiles).values({
       companyId, userId,
       employeeType: data.employeeType === "office" ? "office" : "field",
+      department: data.department || null,
       baseSalary: data.baseSalary || 0,
       bankName: data.bankName || null,
       bankAccountNumber: data.bankAccountNumber || null,
@@ -80,7 +94,7 @@ class EmployeeService {
     if (!existing) throw new Error("Employee not found");
 
     const profileFields: any = {};
-    for (const key of ["employeeType", "employmentStatus", "baseSalary", "bankName", "bankAccountNumber", "bankAccountName", "taxStatus", "npwp", "bpjsKesehatanEnrolled", "bpjsKetenagakerjaanEnrolled", "joinDate"]) {
+    for (const key of ["employeeType", "department", "employmentStatus", "baseSalary", "bankName", "bankAccountNumber", "bankAccountName", "taxStatus", "npwp", "bpjsKesehatanEnrolled", "bpjsKetenagakerjaanEnrolled", "joinDate"]) {
       if (data[key] !== undefined) profileFields[key] = data[key];
     }
     if (Object.keys(profileFields).length > 0) {
@@ -88,7 +102,7 @@ class EmployeeService {
     }
 
     const userFields: any = {};
-    for (const key of ["fullName", "phone", "territoryId", "isActive", "avatarUrl"]) {
+    for (const key of ["fullName", "phone", "territoryId", "isActive", "avatarUrl", "jobTitle"]) {
       if (data[key] !== undefined) userFields[key] = data[key];
     }
     if (Object.keys(userFields).length > 0) {

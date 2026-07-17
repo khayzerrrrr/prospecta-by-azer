@@ -4,6 +4,7 @@ import { useAuthStore } from "./stores/authStore";
 import { listenForReconnect, syncQueue } from "./services/offline";
 import { AppShell } from "./components/layout/AppShell";
 import Login from "./pages/Login";
+import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 
 const LeadsPage = lazy(() => import("./pages/LeadsPage"));
@@ -24,6 +25,7 @@ const PayrollPage = lazy(() => import("./pages/PayrollPage"));
 const PayrollRunDetailPage = lazy(() => import("./pages/PayrollRunDetailPage"));
 const PayslipDetailPage = lazy(() => import("./pages/PayslipDetailPage"));
 const KpiPage = lazy(() => import("./pages/KpiPage"));
+const PlatformCompaniesPage = lazy(() => import("./pages/PlatformCompaniesPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 
@@ -47,6 +49,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<SignUp />} />
       <Route element={<AppShell />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/leads" element={<Suspense fallback={<LoadingPage />}><LeadsPage /></Suspense>} />
@@ -67,6 +70,7 @@ export default function App() {
         <Route path="/payroll/runs/:id" element={<Suspense fallback={<LoadingPage />}><PayrollRunDetailPage /></Suspense>} />
         <Route path="/payroll/payslips/:id" element={<Suspense fallback={<LoadingPage />}><PayslipDetailPage /></Suspense>} />
         <Route path="/kpi" element={<Suspense fallback={<LoadingPage />}><KpiPage /></Suspense>} />
+        <Route path="/platform/companies" element={<Suspense fallback={<LoadingPage />}><PlatformCompaniesPage /></Suspense>} />
         <Route path="/settings" element={<Suspense fallback={<LoadingPage />}><SettingsPage /></Suspense>} />
         <Route path="/profile" element={<Suspense fallback={<LoadingPage />}><ProfilePage /></Suspense>} />
       </Route>

@@ -1,20 +1,11 @@
 import { db, packSettings, leads, visits, deals, users, followUps, pipelineStages } from "@visitflow/db";
 import { eq, and, count, gte } from "drizzle-orm";
 
-// ── Industry Pack Definitions ──
-const industryPackDefs = [
-  { id: "education", name: "Education", description: "Pipeline kunjungan untuk institusi pendidikan", icon: "GraduationCap", features: ["Segmentasi jenjang sekolah", "Template visit form akademik", "Kalender tahun ajaran", "Report akreditasi"], templates: ["Kunjungan Sekolah", "Demo Produk Edu", "Meeting Yayasan"] },
-  { id: "banking", name: "Banking", description: "Pipeline kunjungan untuk sektor perbankan", icon: "Store", features: ["Risk scoring prospek", "Template due diligence", "Pipeline kredit", "Compliance OJK"], templates: ["Visit Nasabah Prioritas", "Survey UMKM", "Audit Cabang"] },
-  { id: "healthcare", name: "Healthcare", description: "Manajemen kunjungan healthcare", icon: "Heart", features: ["Segmentasi spesialisasi", "Template presentasi farmasi", "Tracking izin edar", "Sampling management"], templates: ["Detail Dokter", "Visit RS/Klinik", "Presentasi Alkes"] },
-  { id: "property", name: "Property", description: "Pipeline visit untuk properti", icon: "Home", features: ["Unit availability tracking", "Template site visit", "Pipeline SPK → AJB", "Map integration"], templates: ["Site Visit Project", "Meeting Developer", "Open House"] },
-  { id: "automotive", name: "Automotive", description: "CRM kunjungan otomotif", icon: "Car", features: ["Vehicle interest tracking", "Template test drive", "Pipeline kredit", "Service reminder"], templates: ["Test Drive", "Visit Dealer", "Fleet Presentation"] },
-  { id: "manufacturing", name: "Manufacturing", description: "Pipeline B2B manufaktur", icon: "Factory", features: ["Supplier qualification", "Template factory audit", "Pipeline RFQ → PO", "Quality compliance"], templates: ["Audit Pabrik", "Visit Supplier", "Quality Check"] },
-  { id: "retail", name: "Retail", description: "Manajemen kunjungan retail", icon: "ShoppingBag", features: ["Store classification", "Template merchandising", "Visit frequency automation", "Competitor tracking"], templates: ["Store Visit", "Merchandising Check", "Survey Outlet"] },
-  { id: "saas", name: "SaaS", description: "Pipeline visit untuk SaaS", icon: "Cloud", features: ["Trial → POC tracking", "Template product demo", "Churn risk warning", "NPS tracking"], templates: ["Product Demo", "Technical POC", "QBR Meeting"] },
-  { id: "distributor", name: "Distributor", description: "CRM distribusi", icon: "Truck", features: ["Coverage area mapping", "Template stock & order", "Route optimization", "Sales order integration"], templates: ["Visit Agen", "Stock Check", "Order Taking"] },
-];
-
 // ── AI Pack Definitions ──
+// Industry packs (self-service toggle) were removed — industry is now a
+// fixed, single value set once per company at provisioning by master_account
+// (see companies.industry + company.service.ts). AI packs are unaffected and
+// remain toggleable by regular tenant admins.
 const aiPackDefs = [
   { id: "sales-coach", name: "Sales Coach AI", description: "AI coaching real-time untuk closing lebih baik", icon: "Brain", capabilities: ["Analisa percakapan visit", "Rekomendasi next action", "Score performa agent", "Objection handling guide"], status: "active" },
   { id: "proposal", name: "Proposal AI", description: "Generate proposal otomatis dari data CRM", icon: "FileText", capabilities: ["Auto-generate template", "Custom pricing", "Brand-consistent output", "PDF export"], status: "active" },
@@ -24,17 +15,6 @@ const aiPackDefs = [
 ];
 
 class PackService {
-  // ── List all packs with their enabled status ──
-  async listIndustryPacks(companyId: string) {
-    const settings = await db.select().from(packSettings)
-      .where(and(eq(packSettings.packType, "industry"), eq(packSettings.companyId, companyId)));
-
-    return industryPackDefs.map((pack) => {
-      const setting = settings.find((s) => s.packId === pack.id);
-      return { ...pack, enabled: setting?.enabled || false, activatedAt: setting?.activatedAt || null, config: setting?.configJson || {} };
-    });
-  }
-
   async listAiPacks(companyId: string) {
     const settings = await db.select().from(packSettings)
       .where(and(eq(packSettings.packType, "ai"), eq(packSettings.companyId, companyId)));
@@ -46,7 +26,7 @@ class PackService {
   }
 
   // ── Toggle pack enable/disable ──
-  async togglePack(packType: "industry" | "ai", packId: string, companyId: string) {
+  async togglePack(packType: "ai", packId: string, companyId: string) {
     const [existing] = await db.select().from(packSettings)
       .where(and(eq(packSettings.packType, packType), eq(packSettings.packId, packId), eq(packSettings.companyId, companyId)));
 
@@ -65,9 +45,8 @@ class PackService {
   }
 
   // ── Get pack detail ──
-  async getPackDetail(packType: "industry" | "ai", packId: string, companyId: string) {
-    const defs = packType === "industry" ? industryPackDefs : aiPackDefs;
-    const pack = defs.find((p) => p.id === packId);
+  async getPackDetail(packType: "ai", packId: string, companyId: string) {
+    const pack = aiPackDefs.find((p) => p.id === packId);
     if (!pack) throw new Error("Pack not found");
 
     const [setting] = await db.select().from(packSettings)
@@ -82,7 +61,7 @@ class PackService {
   }
 
   // ── Save pack configuration ──
-  async configurePack(packType: "industry" | "ai", packId: string, config: any, companyId: string) {
+  async configurePack(packType: "ai", packId: string, config: any, companyId: string) {
     const [existing] = await db.select().from(packSettings)
       .where(and(eq(packSettings.packType, packType), eq(packSettings.packId, packId), eq(packSettings.companyId, companyId)));
 

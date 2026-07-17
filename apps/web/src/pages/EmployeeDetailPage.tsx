@@ -2,7 +2,16 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 import { formatIDR, initials } from "@visitflow/utils";
-import { ArrowLeft, Camera, Wallet, CreditCard, Save, Power, Plus, X, Tag } from "lucide-react";
+import { ArrowLeft, Camera, Wallet, CreditCard, Save, Power, Plus, X, Tag, Briefcase } from "lucide-react";
+import { JOB_TITLE_PRESETS, getJobTitleLevel } from "@visitflow/shared/constants/job-titles";
+
+const DEPARTMENTS = [
+  { value: "", label: "Umum / belum ditentukan" },
+  { value: "sales", label: "Sales" },
+  { value: "hr", label: "HR" },
+  { value: "finance", label: "Finance" },
+  { value: "operations", label: "Operasional" },
+];
 
 function Avatar({ name, url, size = 88 }: { name: string; url?: string | null; size?: number }) {
   if (url) return <img src={url} alt={name} className="rounded-full object-cover shrink-0" style={{ width: size, height: size }} />;
@@ -63,6 +72,7 @@ export default function EmployeeDetailPage() {
 
   const [form, setForm] = useState({
     employeeType: "field", employmentStatus: "active", baseSalary: "",
+    jobTitle: "", department: "",
     taxStatus: "TK/0", npwp: "", bankName: "", bankAccountNumber: "", bankAccountName: "",
     bpjsKesehatanEnrolled: false, bpjsKetenagakerjaanEnrolled: false, phone: "",
   });
@@ -73,7 +83,8 @@ export default function EmployeeDetailPage() {
       setEmployee(e);
       setForm({
         employeeType: e.employeeType, employmentStatus: e.employmentStatus,
-        baseSalary: String(e.baseSalary || 0), taxStatus: e.taxStatus || "TK/0",
+        baseSalary: String(e.baseSalary || 0), jobTitle: e.user.jobTitle || "", department: e.department || "",
+        taxStatus: e.taxStatus || "TK/0",
         npwp: e.npwp || "", bankName: e.bankName || "", bankAccountNumber: e.bankAccountNumber || "",
         bankAccountName: e.bankAccountName || "", bpjsKesehatanEnrolled: e.bpjsKesehatanEnrolled,
         bpjsKetenagakerjaanEnrolled: e.bpjsKetenagakerjaanEnrolled, phone: e.user.phone || "",
@@ -143,6 +154,31 @@ export default function EmployeeDetailPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Jabatan & Departemen section */}
+      <div className="bg-white dark:bg-surface-800 rounded-2xl shadow-elevation-low p-6 space-y-4">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2"><Briefcase size={16} /> Jabatan & Departemen</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-slate-500 mb-1 block">Jabatan</label>
+            <input list="job-title-presets" value={form.jobTitle} onChange={(e) => setForm({ ...form, jobTitle: e.target.value })} placeholder="mis. Staff"
+              className="w-full px-4 py-2.5 rounded-xl bg-surface-50 dark:bg-surface-900 ring-1 ring-surface-200 dark:ring-surface-700 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" />
+            <datalist id="job-title-presets">
+              {JOB_TITLE_PRESETS.map((jt) => <option key={jt} value={jt} />)}
+            </datalist>
+          </div>
+          <div>
+            <label className="text-xs text-slate-500 mb-1 block">Departemen</label>
+            <select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}
+              className="w-full px-4 py-2.5 rounded-xl bg-surface-50 dark:bg-surface-900 ring-1 ring-surface-200 dark:ring-surface-700 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+              {DEPARTMENTS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+            </select>
+          </div>
+        </div>
+        {getJobTitleLevel(form.jobTitle) > 1 && (
+          <p className="text-xs text-brand-600 dark:text-brand-400">Jabatan ini bisa melihat data karyawan dengan jabatan di bawahnya (hierarchy of control).</p>
+        )}
       </div>
 
       {/* HR & Payroll section */}

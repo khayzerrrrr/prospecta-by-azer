@@ -5,7 +5,9 @@
   "private": true,
   "exports": {
     ".": "./src/index.ts",
-    "./types": "./src/types/index.ts"
+    "./types": "./src/types/index.ts",
+    "./industries": "./src/industries/index.ts",
+    "./constants/job-titles": "./src/constants/job-titles.ts"
   },
   "dependencies": {
     "@visitflow/db": "workspace:*"

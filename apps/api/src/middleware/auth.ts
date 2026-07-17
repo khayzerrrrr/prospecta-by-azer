@@ -20,5 +20,8 @@ export async function getAuthUser(request: Request, cookie?: any): Promise<UserS
     companyId: (payload.companyId as string) || null,
     territoryId: (payload.territoryId as string) || null,
     avatarUrl: (payload.avatarUrl as string) || null,
+    jobTitle: (payload.jobTitle as string) || null,
+    industry: (payload.industry as string) || null,
+    department: (payload.department as string) || null,
   };
 }

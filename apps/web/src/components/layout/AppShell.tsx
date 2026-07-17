@@ -80,10 +80,8 @@ export function AppShell() {
       {/* Pack Detail Panel */}
       {activePack && (
         <PackPanel
-          type={activePack.type}
           packId={activePack.id}
           packLabel={activePack.label}
-          packColor={activePack.color}
           onClose={closePack}
         />
       )}

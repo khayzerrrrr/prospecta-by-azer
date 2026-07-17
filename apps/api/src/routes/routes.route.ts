@@ -3,7 +3,8 @@ import { db, routes, routeStops, leads, users } from "@visitflow/db";
 import { eq, asc, inArray, sql, and } from "drizzle-orm";
 import { haversineDistance } from "@visitflow/utils";
 import { getAuthUser } from "../middleware/auth";
-import { requirePermission } from "../middleware/rbac";
+import { requirePermission, getSubordinateUserIds } from "../middleware/rbac";
+import { getJobTitleLevel } from "@visitflow/shared/constants/job-titles";
 import { ownershipGuard } from "../middleware/ownership";
 import { UnauthorizedError, NotFoundError } from "../utils/errors";
 
@@ -13,7 +14,7 @@ const routeOwnership = ownershipGuard(async (id: string) => {
   const [route] = await db.select().from(routes).where(eq(routes.id, id));
   if (!route) return undefined;
   const [owner] = await db.select().from(users).where(eq(users.id, route.userId));
-  return { ownerId: route.userId, territoryId: owner?.territoryId ?? null, companyId: route.companyId };
+  return { ownerId: route.userId, ownerJobTitle: owner?.jobTitle ?? null, territoryId: owner?.territoryId ?? null, companyId: route.companyId };
 });
 
 export const routeRoutes = new Elysia({ prefix: "/routes" })
@@ -24,12 +25,16 @@ export const routeRoutes = new Elysia({ prefix: "/routes" })
   })
   .get("/", async ({ user }) => {
     const conditions = [eq(routes.companyId, user.companyId!)];
-    if (user.role === "agent") {
-      conditions.push(eq(routes.userId, user.id));
-    } else if (user.role === "manager") {
-      if (!user.territoryId) return { success: true, data: [] };
-      const territoryUserIds = (await db.select({ id: users.id }).from(users).where(eq(users.territoryId, user.territoryId))).map((u) => u.id);
-      conditions.push(territoryUserIds.length > 0 ? inArray(routes.userId, territoryUserIds) : sql`1=0`);
+    if (user.role !== "super_admin" && user.role !== "admin") {
+      const visibleIds = new Set<string>([user.id]);
+      if (user.role === "manager" && user.territoryId) {
+        (await db.select({ id: users.id }).from(users).where(eq(users.territoryId, user.territoryId))).forEach((u) => visibleIds.add(u.id));
+      }
+      const viewerLevel = getJobTitleLevel(user.jobTitle);
+      if (viewerLevel > 1) {
+        (await getSubordinateUserIds(user.companyId!, viewerLevel)).forEach((id) => visibleIds.add(id));
+      }
+      conditions.push(visibleIds.size > 0 ? inArray(routes.userId, [...visibleIds]) : sql`1=0`);
     }
     const data = await db.select().from(routes).where(and(...conditions));
     return { success: true, data };

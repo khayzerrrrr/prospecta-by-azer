@@ -10,8 +10,8 @@ import { UnauthorizedError } from "../utils/errors";
 const employeeOwnership = ownershipGuard(async (id: string) => {
   const [profile] = await db.select().from(employeeProfiles).where(eq(employeeProfiles.id, id));
   if (!profile) return undefined;
-  const [target] = await db.select({ territoryId: users.territoryId }).from(users).where(eq(users.id, profile.userId));
-  return { companyId: profile.companyId, territoryId: target?.territoryId ?? null };
+  const [target] = await db.select({ territoryId: users.territoryId, jobTitle: users.jobTitle }).from(users).where(eq(users.id, profile.userId));
+  return { companyId: profile.companyId, territoryId: target?.territoryId ?? null, ownerId: profile.userId, ownerJobTitle: target?.jobTitle ?? null };
 });
 
 export const employeeRoutes = new Elysia({ prefix: "/employees" })
@@ -44,6 +44,8 @@ export const employeeRoutes = new Elysia({ prefix: "/employees" })
       phone: t.Optional(t.String()),
       role: t.Optional(t.String()),
       territoryId: t.Optional(t.String()),
+      jobTitle: t.Optional(t.String()),
+      department: t.Optional(t.String()),
       employeeType: t.Optional(t.String()),
       baseSalary: t.Optional(t.Number()),
       bankName: t.Optional(t.String()),

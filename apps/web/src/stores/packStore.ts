@@ -11,11 +11,14 @@ interface PackInfo {
 }
 
 interface PackState {
-  activePack: { type: "industry" | "ai"; id: string; label: string; color: string } | null;
+  // AI packs only — industry packs were retired (see IndustryFields.tsx /
+  // company.service.ts: industry is now fixed once per company at
+  // provisioning, not a self-service marketplace toggle).
+  activePack: { id: string; label: string; color: string } | null;
   enabledPacks: Record<string, PackInfo>;
   isLoading: boolean;
 
-  openPack: (type: "industry" | "ai", id: string, label: string, color: string) => void;
+  openPack: (id: string, label: string, color: string) => void;
   closePack: () => void;
   loadPacks: () => Promise<void>;
   isPackEnabled: (packId: string) => boolean;
@@ -27,13 +30,13 @@ export const usePackStore = create<PackState>((set, get) => ({
   enabledPacks: {},
   isLoading: false,
 
-  openPack: (type, id, label, color) => {
+  openPack: (id, label, color) => {
     const current = get().activePack;
-    if (current?.id === id && current?.type === type) {
+    if (current?.id === id) {
       set({ activePack: null });
       return;
     }
-    set({ activePack: { type, id, label, color } });
+    set({ activePack: { id, label, color } });
   },
 
   closePack: () => set({ activePack: null }),
@@ -41,12 +44,9 @@ export const usePackStore = create<PackState>((set, get) => ({
   loadPacks: async () => {
     set({ isLoading: true });
     try {
-      const [ind, ai] = await Promise.all([
-        api.get<any>("/packs/industry"),
-        api.get<any>("/packs/ai"),
-      ]);
+      const ai = await api.get<any>("/packs/ai");
       const enabled: Record<string, PackInfo> = {};
-      [...(ind.data || []), ...(ai.data || [])].forEach((p: any) => {
+      (ai.data || []).forEach((p: any) => {
         if (p.enabled) {
           enabled[p.id] = {
             id: p.id,

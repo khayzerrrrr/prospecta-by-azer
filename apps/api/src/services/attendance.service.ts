@@ -1,6 +1,8 @@
 import { db, attendance, employeeProfiles, officeLocations, users } from "@visitflow/db";
-import { eq, and, gte, lte, inArray, sql } from "drizzle-orm";
+import { eq, and, gte, lte, inArray, sql, or } from "drizzle-orm";
 import { haversineDistance } from "@visitflow/utils";
+import { getSubordinateUserIds } from "../middleware/rbac";
+import { getJobTitleLevel } from "@visitflow/shared/constants/job-titles";
 
 class AttendanceService {
   async getById(id: string) {
@@ -18,13 +20,21 @@ class AttendanceService {
   async list(params: any, user: any) {
     const { dateFrom, dateTo, userId } = params;
     const conditions = [eq(attendance.companyId, user.companyId)];
-    if (user.role === "agent") {
-      conditions.push(eq(attendance.userId, user.id));
-    } else if (user.role === "manager") {
-      if (!user.territoryId) return [];
-      const teammates = await db.select({ id: users.id }).from(users).where(eq(users.territoryId, user.territoryId));
-      const ids = teammates.map((r) => r.id);
-      conditions.push(ids.length > 0 ? inArray(attendance.userId, ids) : sql`1=0`);
+    if (user.role !== "super_admin" && user.role !== "admin") {
+      // Union of: own attendance, (manager) territory teammates, (hierarchy)
+      // subordinate job titles.
+      const scopeConditions = [eq(attendance.userId, user.id)];
+      if (user.role === "manager" && user.territoryId) {
+        const teammates = await db.select({ id: users.id }).from(users).where(eq(users.territoryId, user.territoryId));
+        const ids = teammates.map((r) => r.id);
+        if (ids.length > 0) scopeConditions.push(inArray(attendance.userId, ids));
+      }
+      const viewerLevel = getJobTitleLevel(user.jobTitle);
+      if (viewerLevel > 1) {
+        const subordinateIds = await getSubordinateUserIds(user.companyId, viewerLevel);
+        if (subordinateIds.length > 0) scopeConditions.push(inArray(attendance.userId, subordinateIds));
+      }
+      conditions.push(or(...scopeConditions)!);
     }
     if (userId) conditions.push(eq(attendance.userId, userId));
     if (dateFrom) conditions.push(gte(attendance.date, dateFrom));

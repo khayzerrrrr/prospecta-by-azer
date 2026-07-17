@@ -1,5 +1,5 @@
 import { Elysia, t } from "elysia";
-import { db, leads } from "@visitflow/db";
+import { db, leads, users } from "@visitflow/db";
 import { eq } from "drizzle-orm";
 import { leadService } from "../services/lead.service";
 import { getAuthUser } from "../middleware/auth";
@@ -10,7 +10,8 @@ import { UnauthorizedError } from "../utils/errors";
 const leadOwnership = ownershipGuard(async (id: string) => {
   const [lead] = await db.select().from(leads).where(eq(leads.id, id));
   if (!lead) return undefined;
-  return { ownerId: lead.assignedTo, territoryId: lead.territoryId, companyId: lead.companyId };
+  const owner = lead.assignedTo ? (await db.select({ jobTitle: users.jobTitle }).from(users).where(eq(users.id, lead.assignedTo)))[0] : undefined;
+  return { ownerId: lead.assignedTo, ownerJobTitle: owner?.jobTitle ?? null, territoryId: lead.territoryId, companyId: lead.companyId };
 });
 
 export const leadRoutes = new Elysia({ prefix: "/leads" })

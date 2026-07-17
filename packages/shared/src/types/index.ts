@@ -8,6 +8,13 @@ export interface UserSession {
   companyId: string | null;
   territoryId: string | null;
   avatarUrl: string | null;
+  // Job title text, e.g. "Direktur Utama" — see packages/shared/constants/job-titles
+  // for how this maps to a hierarchy-of-control access level.
+  jobTitle: string | null;
+  // Company's assigned industry (set once by master_account at provisioning).
+  industry: string | null;
+  // Employee's department — purely for dashboard content selection, not access.
+  department: string | null;
 }
 
 export interface TokenPair {

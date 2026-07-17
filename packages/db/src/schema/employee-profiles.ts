@@ -7,6 +7,10 @@ export const employeeProfiles = pgTable("employee_profiles", {
   companyId: text("company_id").notNull().references(() => companies.id),
   userId: text("user_id").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
   employeeType: text("employee_type", { enum: ["office", "field"] }).notNull().default("field"),
+  // Which dashboard content this employee sees (independent from role, which
+  // governs data-access scope) — validated at the app layer like industry,
+  // not a DB enum. Null = generic/minimal dashboard.
+  department: text("department"),
   employmentStatus: text("employment_status", { enum: ["active", "resigned", "terminated"] }).notNull().default("active"),
   baseSalary: integer("base_salary").default(0),
   bankName: text("bank_name"),

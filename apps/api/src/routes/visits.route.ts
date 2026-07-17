@@ -1,5 +1,5 @@
 import { Elysia, t } from "elysia";
-import { db, visits, leads } from "@visitflow/db";
+import { db, visits, leads, users } from "@visitflow/db";
 import { eq } from "drizzle-orm";
 import { visitService } from "../services/visit.service";
 import { getAuthUser } from "../middleware/auth";
@@ -11,7 +11,8 @@ const visitOwnership = ownershipGuard(async (id: string) => {
   const [visit] = await db.select().from(visits).where(eq(visits.id, id));
   if (!visit) return undefined;
   const [lead] = await db.select().from(leads).where(eq(leads.id, visit.leadId));
-  return { ownerId: visit.userId, territoryId: lead?.territoryId ?? null, companyId: visit.companyId };
+  const [owner] = await db.select({ jobTitle: users.jobTitle }).from(users).where(eq(users.id, visit.userId));
+  return { ownerId: visit.userId, ownerJobTitle: owner?.jobTitle ?? null, territoryId: lead?.territoryId ?? null, companyId: visit.companyId };
 });
 
 export const visitRoutes = new Elysia({ prefix: "/visits" })

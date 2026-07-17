@@ -2,10 +2,19 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 import { formatIDR, initials } from "@visitflow/utils";
+import { JOB_TITLE_PRESETS, getJobTitleLevel } from "@visitflow/shared/constants/job-titles";
 import {
-  Plus, X, Search, Building2, MapPin as MapPinIcon, Camera, ChevronRight,
-  Wallet, CreditCard, ShieldCheck, User as UserIcon, Mail, Phone,
+  Plus, X, Search, Camera, ChevronRight,
+  Wallet, CreditCard, User as UserIcon, Briefcase,
 } from "lucide-react";
+
+const DEPARTMENTS = [
+  { value: "", label: "Umum / belum ditentukan" },
+  { value: "sales", label: "Sales" },
+  { value: "hr", label: "HR" },
+  { value: "finance", label: "Finance" },
+  { value: "operations", label: "Operasional" },
+];
 
 interface Employee {
   id: string;
@@ -52,6 +61,7 @@ export default function EmployeesPage() {
   const defaultForm = () => ({
     email: "", password: "", fullName: "", phone: "", role: "agent",
     employeeType: "field" as "office" | "field",
+    jobTitle: "", department: "",
     baseSalary: "", bankName: "", bankAccountNumber: "", bankAccountName: "",
     taxStatus: "TK/0", npwp: "", bpjsKesehatanEnrolled: false, bpjsKetenagakerjaanEnrolled: false,
     joinDate: new Date().toISOString().slice(0, 10),
@@ -223,6 +233,27 @@ export default function EmployeesPage() {
                   <option value="manager">Manager</option>
                 </select>
               </div>
+            </div>
+
+            {/* Section: Jabatan & Departemen */}
+            <div className="space-y-2.5 border-t border-surface-200 dark:border-surface-700 pt-3">
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5"><Briefcase size={11} /> Jabatan & Departemen</p>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <input list="job-title-presets" value={form.jobTitle} onChange={(e) => setForm({ ...form, jobTitle: e.target.value })} placeholder="Jabatan (mis. Staff)"
+                    className="w-full px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-900 ring-1 ring-surface-200 dark:ring-surface-700 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none" />
+                  <datalist id="job-title-presets">
+                    {JOB_TITLE_PRESETS.map((jt) => <option key={jt} value={jt} />)}
+                  </datalist>
+                </div>
+                <select value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })}
+                  className="px-4 py-3 rounded-xl bg-surface-50 dark:bg-surface-900 ring-1 ring-surface-200 dark:ring-surface-700 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                  {DEPARTMENTS.map((d) => <option key={d.value} value={d.value}>{d.label}</option>)}
+                </select>
+              </div>
+              {getJobTitleLevel(form.jobTitle) > 1 && (
+                <p className="text-[11px] text-brand-600 dark:text-brand-400">Jabatan ini bisa melihat data karyawan dengan jabatan di bawahnya (hierarchy of control).</p>
+              )}
             </div>
 
             {/* Section: HR & Gaji */}

@@ -1,5 +1,7 @@
 import { db, kpiDefinitions, kpiScores, employeeProfiles, users } from "@visitflow/db";
-import { eq, and, inArray, sql } from "drizzle-orm";
+import { eq, and, inArray, sql, or } from "drizzle-orm";
+import { getSubordinateUserIds } from "../middleware/rbac";
+import { getJobTitleLevel } from "@visitflow/shared/constants/job-titles";
 
 class KpiService {
   // ---- Definitions (HR-managed) ----
@@ -36,17 +38,32 @@ class KpiService {
       eq(kpiScores.periodMonth, periodMonth),
       eq(kpiScores.periodYear, periodYear),
     ];
-    if (user.role === "agent") {
-      const [profile] = await db.select().from(employeeProfiles).where(eq(employeeProfiles.userId, user.id));
-      if (!profile) return [];
-      conditions.push(eq(kpiScores.employeeProfileId, profile.id));
-    } else if (user.role === "manager") {
-      if (!user.territoryId) return [];
-      const teammates = await db.select({ id: employeeProfiles.id }).from(employeeProfiles)
-        .innerJoin(users, eq(employeeProfiles.userId, users.id))
-        .where(eq(users.territoryId, user.territoryId));
-      const ids = teammates.map((r) => r.id);
-      conditions.push(ids.length > 0 ? inArray(kpiScores.employeeProfileId, ids) : sql`1=0`);
+    if (user.role !== "super_admin" && user.role !== "admin") {
+      // Union of: own KPI scores, (manager) territory teammates, (hierarchy)
+      // subordinate job titles — all resolved to employee_profiles ids since
+      // kpi_scores references that, not users directly.
+      const scopeConditions: any[] = [];
+      const [ownProfile] = await db.select().from(employeeProfiles).where(eq(employeeProfiles.userId, user.id));
+      if (ownProfile) scopeConditions.push(eq(kpiScores.employeeProfileId, ownProfile.id));
+
+      if (user.role === "manager" && user.territoryId) {
+        const teammates = await db.select({ id: employeeProfiles.id }).from(employeeProfiles)
+          .innerJoin(users, eq(employeeProfiles.userId, users.id))
+          .where(eq(users.territoryId, user.territoryId));
+        const ids = teammates.map((r) => r.id);
+        if (ids.length > 0) scopeConditions.push(inArray(kpiScores.employeeProfileId, ids));
+      }
+      const viewerLevel = getJobTitleLevel(user.jobTitle);
+      if (viewerLevel > 1) {
+        const subordinateUserIds = await getSubordinateUserIds(user.companyId, viewerLevel);
+        if (subordinateUserIds.length > 0) {
+          const subProfiles = await db.select({ id: employeeProfiles.id }).from(employeeProfiles).where(inArray(employeeProfiles.userId, subordinateUserIds));
+          const subProfileIds = subProfiles.map((r) => r.id);
+          if (subProfileIds.length > 0) scopeConditions.push(inArray(kpiScores.employeeProfileId, subProfileIds));
+        }
+      }
+      if (scopeConditions.length === 0) return [];
+      conditions.push(or(...scopeConditions)!);
     }
 
     const rows = await db.select({

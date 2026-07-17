@@ -13,6 +13,11 @@ export const users = pgTable("users", {
   phone: text("phone"),
   avatarUrl: text("avatar_url"),
   role: text("role", { enum: ["master_account", "super_admin", "admin", "manager", "agent"] }).notNull().default("agent"),
+  // Job title/position, e.g. "Direktur Utama" — free text, but a value that
+  // exactly matches a preset in packages/shared's JOB_TITLE_LEVELS grants
+  // hierarchy-of-control data access (see rbac.ts canAccessRecord). Purely
+  // cosmetic for non-matching/custom text.
+  jobTitle: text("job_title"),
   territoryId: text("territory_id").references(() => territories.id),
   // Dormant reports-to relation — not yet populated or read anywhere;
   // left without a FK until a real manager->agent assignment flow exists.

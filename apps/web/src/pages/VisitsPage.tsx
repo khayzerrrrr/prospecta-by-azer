@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../services/api";
-import { usePackStore } from "../stores/packStore";
-import { INDUSTRIES } from "../components/packs/IndustryFields";
+import { useAuthStore } from "../stores/authStore";
+import { INDUSTRIES } from "@visitflow/shared/industries";
 import { MapPin, Clock, Calendar, X, Sparkles } from "lucide-react";
 
 interface Visit { id: string; title: string; leadId: string; userId: string; visitType: string; status: string; scheduledDate: string; scheduledStartTime: string | null; durationMinutes: number | null; checkinTime: string | null; checkoutTime: string | null; }
@@ -19,12 +19,9 @@ export default function VisitsPage() {
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
 
-  // Get active industry pack for visit templates
-  const enabledPacks = usePackStore((s) => s.enabledPacks);
-  const activeIndustryId = Object.keys(enabledPacks).find((k) =>
-    ["education", "banking", "healthcare", "property", "automotive", "manufacturing", "retail", "saas", "distributor"].includes(k)
-  );
-  const industrySpec = activeIndustryId ? INDUSTRIES[activeIndustryId] : null;
+  // Company's fixed industry, used for default visit templates
+  const companyIndustry = useAuthStore((s) => s.user?.industry);
+  const industrySpec = companyIndustry ? INDUSTRIES[companyIndustry] : null;
 
   // Find selected lead's industry
   const selectedLead = useMemo(() => leads.find(l => l.id === form.leadId), [leads, form.leadId]);

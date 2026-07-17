@@ -5,46 +5,15 @@ import { requirePermission } from "../middleware/rbac";
 import { UnauthorizedError } from "../utils/errors";
 
 export const packRoutes = new Elysia({ prefix: "/packs" })
-  // ─── Auth required (was previously public — see Stage 1 audit) ────
   .derive(async ({ request, cookie }) => {
     const user = await getAuthUser(request, cookie).catch(() => null);
     if (!user) throw new UnauthorizedError();
     return { user };
   })
 
-  .post("/onboard/:type/:id", async ({ params, user }) => {
-    const { type, id } = params as { type: string; id: string };
-    if (!["industry", "ai"].includes(type)) return { success: false, error: "Invalid type" };
-    // Enable pack
-    await packService.togglePack(type as "industry" | "ai", id, user.companyId!);
-    // Configure
-    await packService.configurePack(type as "industry" | "ai", id, { installed: true, installedAt: new Date().toISOString() }, user.companyId!);
-    return { success: true, data: { enabled: true } };
-  }, { beforeHandle: requirePermission("settings:write") })
-
-  // ─── Industry Packs ───────────────────────────────
-
-  .get("/industry", async ({ user }) => {
-    const packs = await packService.listIndustryPacks(user.companyId!);
-    return { success: true, data: packs };
-  })
-
-  .get("/industry/:id", async ({ params, user }) => {
-    const pack = await packService.getPackDetail("industry", params.id, user.companyId!);
-    return { success: true, data: pack };
-  })
-
-  .post("/industry/:id/toggle", async ({ params, user }) => {
-    const result = await packService.togglePack("industry", params.id, user.companyId!);
-    return { success: true, data: result };
-  }, { beforeHandle: requirePermission("settings:write") })
-
-  .post("/industry/:id/configure", async ({ params, body, user }) => {
-    const result = await packService.configurePack("industry", params.id, body, user.companyId!);
-    return { success: true, data: result };
-  }, { beforeHandle: requirePermission("settings:write") })
-
-  // Education — School import
+  // Education — School import (data utility, not part of the removed
+  // industry-pack marketplace — a company's industry is now fixed at
+  // provisioning, see company.service.ts)
   .post("/industry/education/import-schools", async ({ body, user }) => {
     const { schools } = body as any;
     if (!Array.isArray(schools) || schools.length === 0) {

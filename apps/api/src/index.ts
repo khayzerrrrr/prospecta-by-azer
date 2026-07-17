@@ -51,6 +51,26 @@ if (!defaultCompany) {
   console.log("Login: admin@visitflow.dev / password123");
 }
 
+// Sentinel platform company — never used for tenant business data, exists
+// only so master_account users (companyId isn't null in the DB, unlike the
+// type's architectural intent) can authenticate through the existing
+// tenant-scoped login lookup without any changes to auth.service.ts.
+let [platformCompany] = await db.select().from(companies).where(eq(companies.slug, "_platform"));
+if (!platformCompany) {
+  [platformCompany] = await db.insert(companies).values({
+    name: "Platform", slug: "_platform", subscriptionStatus: "active",
+  }).returning();
+}
+const [existingMaster] = await db.select().from(users).where(eq(users.companyId, platformCompany!.id));
+if (!existingMaster) {
+  const hash = await Bun.password.hash("password123", { algorithm: "argon2id" });
+  await db.insert(users).values({
+    companyId: platformCompany!.id, email: "master@visitflow.dev", passwordHash: hash,
+    fullName: "Platform Master", role: "master_account",
+  });
+  console.log("Platform master account seeded — master@visitflow.dev / password123");
+}
+
 const port = Number(process.env.PORT) || 3000;
 
 app.listen({ port, hostname: "0.0.0.0" }, ({ hostname, port }) => {

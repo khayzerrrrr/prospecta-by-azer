@@ -1,9 +1,30 @@
 import { Elysia, t } from "elysia";
 import { authService } from "../services/auth.service";
+import { companyService } from "../services/company.service";
 import { getAuthUser } from "../middleware/auth";
 import { resolveTenant } from "../middleware/tenant";
 
 export const authRoutes = new Elysia({ prefix: "/auth" })
+  // Public, pre-tenant-resolution — the company is looked up by name + claim
+  // code here, not by subdomain, since the company self-registering its one
+  // super_admin account hasn't picked a subdomain yet.
+  .post("/claim-company", async ({ body }) => {
+    try {
+      const result = await companyService.claimCompany(body);
+      return { success: true, data: result };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  }, {
+    body: t.Object({
+      companyName: t.String({ minLength: 1 }),
+      claimCode: t.String({ minLength: 1 }),
+      fullName: t.String({ minLength: 2 }),
+      jobTitle: t.Optional(t.String()),
+      email: t.String({ format: "email" }),
+      password: t.String({ minLength: 6 }),
+    }),
+  })
   .derive(resolveTenant)
   .post("/register", async ({ body, company }) => {
     try {

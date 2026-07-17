@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../services/api";
-import { usePackStore } from "../stores/packStore";
+import { useAuthStore } from "../stores/authStore";
 import { SchoolUpload } from "../components/packs/SchoolUpload";
-import { IndustryFields, INDUSTRIES } from "../components/packs/IndustryFields";
-import { Plus, X, Search, SlidersHorizontal, ChevronRight, MapPin, GraduationCap, Upload, Building2, Sparkles } from "lucide-react";
+import { IndustryFields } from "../components/packs/IndustryFields";
+import { INDUSTRIES } from "@visitflow/shared/industries";
+import { Plus, X, Search, SlidersHorizontal, ChevronRight, MapPin, GraduationCap, Upload, Building2 } from "lucide-react";
 
 interface Lead {
   id: string; companyName: string; contactName: string | null;
@@ -25,13 +26,9 @@ const statusColor: Record<string, string> = {
 
 export default function LeadsPage() {
   const navigate = useNavigate();
-  const enabledPacks = usePackStore((s) => s.enabledPacks);
-  const packCount = Object.keys(enabledPacks).length;
-  const eduEnabled = !!enabledPacks["education"];
-  const activeIndustryId = Object.keys(enabledPacks).find((k) =>
-    ["education", "banking", "healthcare", "property", "automotive", "manufacturing", "retail", "saas", "distributor"].includes(k)
-  );
-  const industrySpec = activeIndustryId ? INDUSTRIES[activeIndustryId] : null;
+  const companyIndustry = useAuthStore((s) => s.user?.industry);
+  const industrySpec = companyIndustry ? INDUSTRIES[companyIndustry] : null;
+  const eduEnabled = companyIndustry === "education";
   const [showSchoolUpload, setShowSchoolUpload] = useState(false);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +39,7 @@ export default function LeadsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [showForm, setShowForm] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const defaultForm = () => ({ companyName: "", contactName: "", contactTitle: "", phone: "", city: "", industry: "", status: "new", qualification: "cold", latitude: "", longitude: "" });
+  const defaultForm = () => ({ companyName: "", contactName: "", contactTitle: "", phone: "", city: "", status: "new", qualification: "cold", latitude: "", longitude: "" });
   const [form, setForm] = useState(defaultForm());
   const [saving, setSaving] = useState(false);
 
@@ -69,22 +66,15 @@ export default function LeadsPage() {
       const payload: any = { ...form };
       if (form.latitude) payload.latitude = parseFloat(form.latitude);
       if (form.longitude) payload.longitude = parseFloat(form.longitude);
-      const enabledPacks = usePackStore.getState().enabledPacks;
-      const activeIndustry = Object.keys(enabledPacks).find((k) => enabledPacks[k]?.id && ["education","banking","healthcare","property","automotive","manufacturing","retail","saas","distributor"].includes(k));
-      if (activeIndustry) {
-        payload.industry = activeIndustry;
-        payload.segment = activeIndustry;
-        payload.tags = [activeIndustry];
+      if (companyIndustry) {
+        payload.industry = companyIndustry;
+        payload.segment = companyIndustry;
+        payload.tags = [companyIndustry];
         // Only include industry-specific fields in customFields, not generic fields
         const genericKeys = ["companyName", "contactName", "contactTitle", "phone", "city", "industry", "status", "qualification", "latitude", "longitude"];
         const customFields: Record<string, any> = {};
         Object.keys(form).forEach(k => { if (!genericKeys.includes(k) && (form as any)[k]) customFields[k] = (form as any)[k]; });
         payload.customFields = JSON.stringify(customFields);
-      } else if (form.industry) {
-        // Manually selected industry (no pack installed)
-        payload.industry = form.industry;
-        payload.segment = form.industry;
-        payload.tags = [form.industry];
       }
       await api.post("/leads", payload);
       setShowForm(false);
@@ -113,32 +103,6 @@ export default function LeadsPage() {
           </button>
         </div>
       </div>
-
-      {/* Active Packs Banner */}
-      {packCount > 0 && (
-        <div className="flex items-center gap-2 flex-wrap p-3 rounded-xl bg-gradient-to-r from-violet-50 via-brand-50 to-emerald-50 dark:from-violet-900/10 dark:via-brand-900/10 dark:to-emerald-900/10 border border-violet-100 dark:border-violet-800">
-          <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider mr-1">Packs Aktif:</span>
-          {Object.entries(enabledPacks).map(([id, info]) => {
-            if (["sales-coach","proposal","meeting","analytics-ai","forecast"].includes(id)) return null;
-            const colors: Record<string, string> = {
-              education: "bg-violet-100 text-violet-700 border-violet-200",
-              banking: "bg-emerald-100 text-emerald-700 border-emerald-200",
-              healthcare: "bg-red-100 text-red-700 border-red-200",
-              property: "bg-amber-100 text-amber-700 border-amber-200",
-              automotive: "bg-blue-100 text-blue-700 border-blue-200",
-              manufacturing: "bg-slate-100 text-slate-700 border-slate-200",
-              retail: "bg-pink-100 text-pink-700 border-pink-200",
-              saas: "bg-cyan-100 text-cyan-700 border-cyan-200",
-              distributor: "bg-orange-100 text-orange-700 border-orange-200",
-            };
-            return (
-              <span key={id} className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${colors[id] || "bg-slate-100 text-slate-600"}`}>
-                {(info as any).name || id}
-              </span>
-            );
-          })}
-        </div>
-      )}
 
       {/* Search + Filter Bar - Mobile Compact */}
       <div className="flex items-center gap-2">
@@ -313,23 +277,6 @@ export default function LeadsPage() {
               <p className="text-[10px] text-emerald-600 flex items-center gap-1">
                 📍 {parseFloat(form.latitude).toFixed(5)}, {parseFloat(form.longitude).toFixed(5)}
               </p>
-            )}
-
-            {/* Industry selector — always visible so user can pick industry type */}
-            {!industrySpec && (
-              <div className="border-t border-surface-200 dark:border-surface-700 pt-3 mt-2">
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">Jenis Industri</p>
-                <select
-                  value={form.industry || ""}
-                  onChange={(e) => setForm({...form, industry: e.target.value})}
-                  className="w-full px-3 py-2 rounded-xl bg-surface-50 dark:bg-surface-900 ring-1 ring-surface-200 dark:ring-surface-700 text-xs focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                >
-                  <option value="">Umum (tanpa industri)</option>
-                  {Object.entries(INDUSTRIES).map(([id, spec]) => (
-                    <option key={id} value={id}>{spec.label}</option>
-                  ))}
-                </select>
-              </div>
             )}
 
             <IndustryFields form={form} setForm={setForm} />

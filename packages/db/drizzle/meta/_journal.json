@@ -29,6 +29,20 @@
       "when": 1784292826788,
       "tag": "0003_rich_nitro",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784328259699,
+      "tag": "0004_wandering_george_stacy",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784328290902,
+      "tag": "0005_smart_zarda",
+      "breakpoints": true
     }
   ]
 }

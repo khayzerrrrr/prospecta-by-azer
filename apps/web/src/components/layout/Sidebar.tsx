@@ -6,18 +6,18 @@ import { useAuthStore } from "../../stores/authStore";
 import { usePackStore } from "../../stores/packStore";
 import {
   LayoutDashboard, Users, MapPin, Calendar, KanbanSquare,
-  Route, ClipboardCheck, BarChart3, Map, Settings, ChevronLeft,
-  ChevronDown, Sparkles, Building2, Zap, Bot, FileText, Mic,
-  TrendingUp, Brain, Store, GraduationCap, Heart, Home, Car,
-  Factory, ShoppingBag, Cloud, Truck, UserCog, Fingerprint, Wallet, Target,
+  Route, ClipboardCheck, BarChart3, Settings, ChevronLeft,
+  ChevronDown, Sparkles, Building2, Bot, FileText, Mic,
+  TrendingUp, Brain,
+  UserCog, Fingerprint, Wallet, Target,
 } from "lucide-react";
 
 // ── Role-based visibility ──
 const roleLabel: Record<string, string> = {
-  super_admin: "Super Admin", admin: "Admin", manager: "Manager", agent: "Agent",
+  master_account: "Platform Master", super_admin: "Admin Perusahaan", admin: "Admin", manager: "Manager", agent: "Agent",
 };
 const roleColor: Record<string, string> = {
-  super_admin: "bg-red-500", admin: "bg-brand-500", manager: "bg-amber-500", agent: "bg-emerald-500",
+  master_account: "bg-violet-500", super_admin: "bg-red-500", admin: "bg-brand-500", manager: "bg-amber-500", agent: "bg-emerald-500",
 };
 
 // ── Core Modules ──
@@ -37,19 +37,7 @@ const coreModules = [
   { to: "/payroll", icon: Wallet, label: "Slip Gaji", roles: ["manager", "agent"] },
   { to: "/kpi", icon: Target, label: "KPI", roles: ["super_admin", "admin", "manager", "agent"] },
   { to: "/settings", icon: Settings, label: "Pengaturan", roles: ["super_admin", "admin"] },
-];
-
-// ── Industry Packs ──
-const industryPacks = [
-  { id: "education", icon: GraduationCap, label: "Education", color: "text-violet-400" },
-  { id: "banking", icon: Store, label: "Banking", color: "text-emerald-400" },
-  { id: "healthcare", icon: Heart, label: "Healthcare", color: "text-red-400" },
-  { id: "property", icon: Home, label: "Property", color: "text-amber-400" },
-  { id: "automotive", icon: Car, label: "Automotive", color: "text-blue-400" },
-  { id: "manufacturing", icon: Factory, label: "Manufacturing", color: "text-slate-400" },
-  { id: "retail", icon: ShoppingBag, label: "Retail", color: "text-pink-400" },
-  { id: "saas", icon: Cloud, label: "SaaS", color: "text-cyan-400" },
-  { id: "distributor", icon: Truck, label: "Distributor", color: "text-orange-400" },
+  { to: "/platform/companies", icon: Building2, label: "Perusahaan", roles: ["master_account"], description: "Kelola Tenant" },
 ];
 
 // ── AI Packs ──
@@ -69,20 +57,13 @@ export function Sidebar() {
   const [coreExpanded, setCoreExpanded] = useState(true);
   const [aiExpanded, setAiExpanded] = useState(false);
   const { activePack, openPack, closePack } = usePackStore();
-  const activeIndustry = activePack?.type === "industry" ? activePack.id : null;
-  const activeAi = activePack?.type === "ai" ? activePack.id : null;
+  const activeAi = activePack?.id ?? null;
   const enabledPacks = usePackStore((s) => s.enabledPacks);
   const isPackEnabled = (prefix: string, id: string) => !!enabledPacks[id];
-  const hasAnyIndustryPack = industryPacks.some(p => isPackEnabled("industry", p.id));
-  const [industryExpanded, setIndustryExpanded] = useState(hasAnyIndustryPack);
 
-  const handleIndustryClick = (id: string, label: string, color: string) => {
-    if (activeIndustry === id) { closePack(); return; }
-    openPack("industry", id, label, color);
-  };
   const handleAiClick = (id: string, label: string, color: string) => {
     if (activeAi === id) { closePack(); return; }
-    openPack("ai", id, label, color);
+    openPack(id, label, color);
   };
 
   const visibleCore = coreModules.filter((m) => m.roles.includes(role));
@@ -153,64 +134,6 @@ export function Sidebar() {
                   )}
                 </NavLink>
               ))}
-            </div>
-          )}
-        </div>
-
-        {/* ─── Industry Packs Section ─── */}
-        <div>
-          {sidebarOpen && (
-            <button
-              onClick={() => setIndustryExpanded(!industryExpanded)}
-              className="flex items-center justify-between w-full px-2 py-1 mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-slate-300 transition-colors"
-            >
-              <div className="flex items-center gap-1.5">
-                <Building2 size={11} />
-                <span>Industry Packs</span>
-              </div>
-              <ChevronDown size={12} className={cn("transition-transform", industryExpanded && "rotate-180")} />
-            </button>
-          )}
-          {(industryExpanded || !sidebarOpen) && (
-            <div className="space-y-0.5">
-              {industryPacks.map(({ id, icon: Icon, label, color }) => {
-                const installed = isPackEnabled("industry", id);
-                return (
-                  <button
-                    key={id}
-                    onClick={() => handleIndustryClick(id, label, color)}
-                    className={cn(
-                      "flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all w-full text-left",
-                      activeIndustry === id
-                        ? "bg-white/10 text-white"
-                        : installed
-                          ? "text-slate-300 hover:bg-white/5 hover:text-white"
-                          : "text-slate-600 hover:bg-white/5 hover:text-slate-400",
-                      !sidebarOpen && "justify-center px-2",
-                    )}
-                  >
-                    <Icon size={15} className={cn(
-                      color,
-                      installed ? "opacity-100" : "opacity-40",
-                      activeIndustry === id && "drop-shadow-[0_0_4px_rgba(255,255,255,0.3)]",
-                    )} />
-                    {sidebarOpen && (
-                      <>
-                        <span className="flex-1">{label}</span>
-                        {installed ? (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/30">
-                            ✓ Aktif
-                          </span>
-                        ) : (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-700 text-slate-500 font-medium border border-slate-600">
-                            Install
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </button>
-                );
-              })}
             </div>
           )}
         </div>
