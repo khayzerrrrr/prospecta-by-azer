@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 import { db, visits, deals, followUps, users, pipelineStages } from "@visitflow/db";
-import { eq, and, gte, count } from "drizzle-orm";
+import { eq, and, gte, lte, count } from "drizzle-orm";
 import { getAuthUser } from "../middleware/auth";
 import { requirePermission } from "../middleware/rbac";
 import { UnauthorizedError, ForbiddenError } from "../utils/errors";
@@ -41,17 +41,24 @@ export const analyticsRoutes = new Elysia({ prefix: "/analytics" })
   }, { beforeHandle: requirePermission("analytics:read") })
   .get("/visit-trends", async ({ user }) => {
     const isAgent = user.role === "agent";
+    const today = new Date();
+    const startDate = new Date(today);
+    startDate.setDate(startDate.getDate() - 29);
+    const startStr = startDate.toISOString().slice(0, 10);
+    const todayStr = today.toISOString().slice(0, 10);
+
+    // Single range query + in-memory bucketing instead of 30 days x 2 queries —
+    // the old loop issued 60 sequential round trips for one request.
+    const conds = [eq(visits.companyId, user.companyId!), gte(visits.scheduledDate, startStr), lte(visits.scheduledDate, todayStr)];
+    if (isAgent) conds.push(eq(visits.userId, user.id));
+    const rows = await db.select({ scheduledDate: visits.scheduledDate, status: visits.status }).from(visits).where(and(...conds));
+
     const data: { date: string; planned: number; completed: number }[] = [];
     for (let i = 29; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i);
       const ds = d.toISOString().slice(0, 10);
-      const plannedConds = [eq(visits.companyId, user.companyId!), eq(visits.scheduledDate, ds)];
-      if (isAgent) plannedConds.push(eq(visits.userId, user.id));
-      const [planned] = await db.select({ count: count() }).from(visits).where(and(...plannedConds));
-      const completedConds = [eq(visits.companyId, user.companyId!), eq(visits.scheduledDate, ds), eq(visits.status, "completed")];
-      if (isAgent) completedConds.push(eq(visits.userId, user.id));
-      const [completed] = await db.select({ count: count() }).from(visits).where(and(...completedConds));
-      data.push({ date: ds, planned: Number(planned?.count || 0), completed: Number(completed?.count || 0) });
+      const dayRows = rows.filter((r) => r.scheduledDate === ds);
+      data.push({ date: ds, planned: dayRows.length, completed: dayRows.filter((r) => r.status === "completed").length });
     }
     return { success: true, data };
   }, { beforeHandle: requirePermission("analytics:read") })
