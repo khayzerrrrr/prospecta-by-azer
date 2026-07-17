@@ -56,4 +56,11 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
     if (!user) return { success: false, error: "Unauthorized" };
     const result = await authService.me(user.id);
     return { success: true, data: result };
+  })
+  .patch("/me/photo", async ({ user, body }) => {
+    if (!user) return { success: false, error: "Unauthorized" };
+    const result = await authService.updatePhoto(user.id, body.photo);
+    return { success: true, data: result };
+  }, {
+    body: t.Object({ photo: t.String() }),
   });

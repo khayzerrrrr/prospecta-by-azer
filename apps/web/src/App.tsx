@@ -17,6 +17,9 @@ const MapPage = lazy(() => import("./pages/MapPage"));
 const RoutesPage = lazy(() => import("./pages/RoutesPage"));
 const FollowUpsPage = lazy(() => import("./pages/FollowUpsPage"));
 const TeamPage = lazy(() => import("./pages/TeamPage"));
+const EmployeesPage = lazy(() => import("./pages/EmployeesPage"));
+const EmployeeDetailPage = lazy(() => import("./pages/EmployeeDetailPage"));
+const AttendancePage = lazy(() => import("./pages/AttendancePage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 
@@ -53,6 +56,9 @@ export default function App() {
         <Route path="/follow-ups" element={<Suspense fallback={<LoadingPage />}><FollowUpsPage /></Suspense>} />
         <Route path="/analytics" element={<Suspense fallback={<LoadingPage />}><AnalyticsPage /></Suspense>} />
         <Route path="/team" element={<Suspense fallback={<LoadingPage />}><TeamPage /></Suspense>} />
+        <Route path="/employees" element={<Suspense fallback={<LoadingPage />}><EmployeesPage /></Suspense>} />
+        <Route path="/employees/:id" element={<Suspense fallback={<LoadingPage />}><EmployeeDetailPage /></Suspense>} />
+        <Route path="/attendance" element={<Suspense fallback={<LoadingPage />}><AttendancePage /></Suspense>} />
         <Route path="/settings" element={<Suspense fallback={<LoadingPage />}><SettingsPage /></Suspense>} />
         <Route path="/profile" element={<Suspense fallback={<LoadingPage />}><ProfilePage /></Suspense>} />
       </Route>

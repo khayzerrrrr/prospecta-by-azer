@@ -54,6 +54,7 @@ export const employeeRoutes = new Elysia({ prefix: "/employees" })
       bpjsKesehatanEnrolled: t.Optional(t.Boolean()),
       bpjsKetenagakerjaanEnrolled: t.Optional(t.Boolean()),
       joinDate: t.Optional(t.String()),
+      avatarUrl: t.Optional(t.String()),
     }),
   })
   .patch("/:id", async ({ params, body }) => {

@@ -36,6 +36,11 @@ class AuthService {
     return { user: this.toSession(user), tokens };
   }
 
+  async updatePhoto(userId: string, photo: string) {
+    await db.update(users).set({ avatarUrl: photo, updatedAt: new Date() }).where(eq(users.id, userId));
+    return this.me(userId);
+  }
+
   async me(userId: string) {
     const [user] = await db.select().from(users).where(eq(users.id, userId));
     if (!user) throw new Error("User not found");

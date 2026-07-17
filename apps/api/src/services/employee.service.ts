@@ -11,7 +11,7 @@ class EmployeeService {
     }
     const rows = await db.select({
       profile: employeeProfiles,
-      user: { id: users.id, email: users.email, fullName: users.fullName, phone: users.phone, role: users.role, isActive: users.isActive, territoryId: users.territoryId },
+      user: { id: users.id, email: users.email, fullName: users.fullName, phone: users.phone, role: users.role, isActive: users.isActive, territoryId: users.territoryId, avatarUrl: users.avatarUrl },
     }).from(employeeProfiles)
       .innerJoin(users, eq(employeeProfiles.userId, users.id))
       .where(and(...conditions));
@@ -21,7 +21,7 @@ class EmployeeService {
   async getById(id: string) {
     const [row] = await db.select({
       profile: employeeProfiles,
-      user: { id: users.id, email: users.email, fullName: users.fullName, phone: users.phone, role: users.role, isActive: users.isActive, territoryId: users.territoryId },
+      user: { id: users.id, email: users.email, fullName: users.fullName, phone: users.phone, role: users.role, isActive: users.isActive, territoryId: users.territoryId, avatarUrl: users.avatarUrl },
     }).from(employeeProfiles)
       .innerJoin(users, eq(employeeProfiles.userId, users.id))
       .where(eq(employeeProfiles.id, id));
@@ -32,7 +32,7 @@ class EmployeeService {
   async getByUserId(userId: string) {
     const [row] = await db.select({
       profile: employeeProfiles,
-      user: { id: users.id, email: users.email, fullName: users.fullName, phone: users.phone, role: users.role, isActive: users.isActive, territoryId: users.territoryId },
+      user: { id: users.id, email: users.email, fullName: users.fullName, phone: users.phone, role: users.role, isActive: users.isActive, territoryId: users.territoryId, avatarUrl: users.avatarUrl },
     }).from(employeeProfiles)
       .innerJoin(users, eq(employeeProfiles.userId, users.id))
       .where(eq(employeeProfiles.userId, userId));
@@ -55,6 +55,7 @@ class EmployeeService {
       id: userId, companyId, email: data.email, passwordHash,
       fullName: data.fullName, phone: data.phone || null, role,
       territoryId: data.territoryId || null,
+      avatarUrl: data.avatarUrl || null,
     });
 
     const [profile] = await db.insert(employeeProfiles).values({
@@ -87,7 +88,7 @@ class EmployeeService {
     }
 
     const userFields: any = {};
-    for (const key of ["fullName", "phone", "territoryId", "isActive"]) {
+    for (const key of ["fullName", "phone", "territoryId", "isActive", "avatarUrl"]) {
       if (data[key] !== undefined) userFields[key] = data[key];
     }
     if (Object.keys(userFields).length > 0) {

@@ -12,9 +12,11 @@ const allItems = [
 ];
 
 const allQuickActions = [
+  { label: "Absensi", href: "/attendance", roles: ["super_admin", "admin", "manager", "agent"] },
   { label: "Prospek Baru", href: "/leads", roles: ["super_admin", "admin", "manager", "agent"] },
   { label: "Kunjungan Baru", href: "/visits", roles: ["super_admin", "admin", "manager", "agent"] },
   { label: "Deal Baru", href: "/pipeline", roles: ["super_admin", "admin", "manager", "agent"] },
+  { label: "Karyawan", href: "/employees", roles: ["super_admin", "admin", "manager"] },
 ];
 
 export function MobileNav() {
