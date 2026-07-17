@@ -32,7 +32,6 @@ logs
 
 # App specific
 uploads/
-packages/db/drizzle/
 bun.lockb
 data/
 *.db

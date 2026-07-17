@@ -1,9 +1,12 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { companies } from "./companies";
+import { users } from "./users";
 
-export const analyticsEvents = sqliteTable("analytics_events", {
+export const analyticsEvents = pgTable("analytics_events", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  userId: text("user_id"),
+  companyId: text("company_id").notNull().references(() => companies.id),
+  userId: text("user_id").references(() => users.id, { onDelete: "set null" }),
   eventType: text("event_type").notNull(),
-  payload: text("payload").default("{}"),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  payload: jsonb("payload").$type<Record<string, unknown>>().default({}),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });

@@ -6,19 +6,20 @@
   "exports": {
     ".": "./src/index.ts",
     "./schema": "./src/schema/index.ts",
-    "./seed": "./src/seed.ts"
+    "./seed": "./src/seed.ts",
+    "./migrate": "./src/migrate.ts"
   },
   "scripts": {
     "generate": "drizzle-kit generate",
     "push": "drizzle-kit push",
+    "migrate": "bun run src/migrate.ts",
     "seed": "bun run src/seed.ts",
     "studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@types/better-sqlite3": "^7.6.13",
-    "better-sqlite3": "^12.11.1",
     "drizzle-kit": "^0.30.5",
-    "drizzle-orm": "^0.38.3"
+    "drizzle-orm": "^0.38.3",
+    "postgres": "^3.4.5"
   },
   "devDependencies": {
     "@types/bun": "latest"

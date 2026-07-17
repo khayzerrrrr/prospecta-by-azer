@@ -1,8 +1,11 @@
-import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+import { pgTable, text, timestamp, real, integer } from "drizzle-orm/pg-core";
+import { companies } from "./companies";
+import { users } from "./users";
 
-export const routes = sqliteTable("routes", {
+export const routes = pgTable("routes", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  userId: text("user_id").notNull(),
+  companyId: text("company_id").notNull().references(() => companies.id),
+  userId: text("user_id").notNull().references(() => users.id),
   name: text("name").notNull(),
   date: text("date").notNull(),
   status: text("status", { enum: ["draft", "active", "completed", "archived"] }).notNull().default("draft"),
@@ -14,6 +17,6 @@ export const routes = sqliteTable("routes", {
   endLat: real("end_lat"),
   endLng: real("end_lng"),
   polylineEncoded: text("polyline_encoded"),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

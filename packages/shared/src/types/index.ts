@@ -4,7 +4,8 @@ export interface UserSession {
   id: string;
   email: string;
   fullName: string;
-  role: "super_admin" | "admin" | "manager" | "agent";
+  role: "master_account" | "super_admin" | "admin" | "manager" | "agent";
+  companyId: string | null;
   territoryId: string | null;
   avatarUrl: string | null;
 }

@@ -25,92 +25,86 @@ const aiPackDefs = [
 
 class PackService {
   // ── List all packs with their enabled status ──
-  async listIndustryPacks(companyId = "default") {
-    const settings = db.select().from(packSettings)
-      .where(and(eq(packSettings.packType, "industry"), eq(packSettings.companyId, companyId)))
-      .all();
+  async listIndustryPacks(companyId: string) {
+    const settings = await db.select().from(packSettings)
+      .where(and(eq(packSettings.packType, "industry"), eq(packSettings.companyId, companyId)));
 
     return industryPackDefs.map((pack) => {
       const setting = settings.find((s) => s.packId === pack.id);
-      return { ...pack, enabled: setting?.enabled || false, activatedAt: setting?.activatedAt || null, config: setting ? JSON.parse(setting.configJson || "{}") : {} };
+      return { ...pack, enabled: setting?.enabled || false, activatedAt: setting?.activatedAt || null, config: setting?.configJson || {} };
     });
   }
 
-  async listAiPacks(companyId = "default") {
-    const settings = db.select().from(packSettings)
-      .where(and(eq(packSettings.packType, "ai"), eq(packSettings.companyId, companyId)))
-      .all();
+  async listAiPacks(companyId: string) {
+    const settings = await db.select().from(packSettings)
+      .where(and(eq(packSettings.packType, "ai"), eq(packSettings.companyId, companyId)));
 
     return aiPackDefs.map((pack) => {
       const setting = settings.find((s) => s.packId === pack.id);
-      return { ...pack, enabled: setting?.enabled || false, activatedAt: setting?.activatedAt || null, config: setting ? JSON.parse(setting.configJson || "{}") : {} };
+      return { ...pack, enabled: setting?.enabled || false, activatedAt: setting?.activatedAt || null, config: setting?.configJson || {} };
     });
   }
 
   // ── Toggle pack enable/disable ──
-  async togglePack(packType: "industry" | "ai", packId: string, companyId = "default") {
-    const existing = db.select().from(packSettings)
-      .where(and(eq(packSettings.packType, packType), eq(packSettings.packId, packId), eq(packSettings.companyId, companyId)))
-      .get();
+  async togglePack(packType: "industry" | "ai", packId: string, companyId: string) {
+    const [existing] = await db.select().from(packSettings)
+      .where(and(eq(packSettings.packType, packType), eq(packSettings.packId, packId), eq(packSettings.companyId, companyId)));
 
     if (existing) {
       const newEnabled = !existing.enabled;
-      db.update(packSettings)
+      await db.update(packSettings)
         .set({ enabled: newEnabled, activatedAt: newEnabled ? new Date() : null, updatedAt: new Date() })
-        .where(eq(packSettings.id, existing.id))
-        .run();
+        .where(eq(packSettings.id, existing.id));
       return { enabled: newEnabled };
     }
 
-    db.insert(packSettings).values({
+    await db.insert(packSettings).values({
       packType, packId, companyId, enabled: true, activatedAt: new Date(),
-    }).run();
+    });
     return { enabled: true };
   }
 
   // ── Get pack detail ──
-  async getPackDetail(packType: "industry" | "ai", packId: string, companyId = "default") {
+  async getPackDetail(packType: "industry" | "ai", packId: string, companyId: string) {
     const defs = packType === "industry" ? industryPackDefs : aiPackDefs;
     const pack = defs.find((p) => p.id === packId);
     if (!pack) throw new Error("Pack not found");
 
-    const setting = db.select().from(packSettings)
-      .where(and(eq(packSettings.packType, packType), eq(packSettings.packId, packId), eq(packSettings.companyId, companyId)))
-      .get();
+    const [setting] = await db.select().from(packSettings)
+      .where(and(eq(packSettings.packType, packType), eq(packSettings.packId, packId), eq(packSettings.companyId, companyId)));
 
     return {
       ...pack,
       enabled: setting?.enabled || false,
       activatedAt: setting?.activatedAt || null,
-      config: setting ? JSON.parse(setting.configJson || "{}") : {},
+      config: setting?.configJson || {},
     };
   }
 
   // ── Save pack configuration ──
-  async configurePack(packType: "industry" | "ai", packId: string, config: any, companyId = "default") {
-    const existing = db.select().from(packSettings)
-      .where(and(eq(packSettings.packType, packType), eq(packSettings.packId, packId), eq(packSettings.companyId, companyId)))
-      .get();
+  async configurePack(packType: "industry" | "ai", packId: string, config: any, companyId: string) {
+    const [existing] = await db.select().from(packSettings)
+      .where(and(eq(packSettings.packType, packType), eq(packSettings.packId, packId), eq(packSettings.companyId, companyId)));
 
     if (existing) {
-      db.update(packSettings)
-        .set({ configJson: JSON.stringify(config), updatedAt: new Date() })
-        .where(eq(packSettings.id, existing.id))
-        .run();
+      await db.update(packSettings)
+        .set({ configJson: config, updatedAt: new Date() })
+        .where(eq(packSettings.id, existing.id));
     } else {
-      db.insert(packSettings).values({
-        packType, packId, companyId, enabled: true, configJson: JSON.stringify(config), activatedAt: new Date(),
-      }).run();
+      await db.insert(packSettings).values({
+        packType, packId, companyId, enabled: true, configJson: config, activatedAt: new Date(),
+      });
     }
     return { configured: true };
   }
 
   // ── Education Pack: School import ──
-  async importSchools(schools: any[], userId: string, companyId = "default") {
+  async importSchools(schools: any[], userId: string, companyId: string) {
     let imported = 0;
     for (const school of schools) {
       if (!school.schoolName) continue;
-      db.insert(leads).values({
+      await db.insert(leads).values({
+        companyId,
         companyName: school.schoolName,
         contactName: school.principalName || null,
         phone: school.phone || null,
@@ -120,14 +114,14 @@ class PackService {
         province: school.province || null,
         latitude: school.latitude ? parseFloat(school.latitude) : null,
         longitude: school.longitude ? parseFloat(school.longitude) : null,
-        tags: JSON.stringify(["education", school.level || "school"]),
-        customFields: JSON.stringify({ level: school.level, studentCount: school.studentCount }),
+        tags: ["education", school.level || "school"],
+        customFields: { level: school.level, studentCount: school.studentCount },
         industry: "education",
         segment: "education",
         createdBy: userId,
         assignedTo: userId,
         status: "new",
-      }).run();
+      });
       imported++;
     }
     return { imported };
@@ -136,21 +130,18 @@ class PackService {
   // ── AI: Sales Coach — Analyze agent performance ──
   async analyzeSalesCoach(userId: string) {
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
-    const today = new Date().toISOString().slice(0, 10);
 
-    const completedVisits = db.select({ count: count() }).from(visits)
-      .where(and(eq(visits.userId, userId), eq(visits.status, "completed"), gte(visits.scheduledDate, monthStart)))
-      .get();
+    const [completedVisits] = await db.select({ count: count() }).from(visits)
+      .where(and(eq(visits.userId, userId), eq(visits.status, "completed"), gte(visits.scheduledDate, monthStart)));
 
-    const agentDeals = db.select().from(deals).where(eq(deals.userId, userId)).all();
-    const stages = db.select().from(pipelineStages).all();
+    const agentDeals = await db.select().from(deals).where(eq(deals.userId, userId));
+    const stages = await db.select().from(pipelineStages);
     const wonIds = stages.filter((s) => s.isWon).map((s) => s.id);
     const wonDeals = agentDeals.filter((d) => wonIds.includes(d.stageId));
 
     const totalCompleted = Number(completedVisits?.count || 0);
     const conversionRate = agentDeals.length > 0 ? Math.round((wonDeals.length / agentDeals.length) * 100) : 0;
 
-    // AI insights
     const insights = [];
     if (totalCompleted < 10) insights.push("Tingkatkan frekuensi kunjungan — target minimal 3/hari");
     if (conversionRate < 20) insights.push("Fokus pada kualifikasi prospek — pastikan hanya hot/warm leads yang dikunjungi");
@@ -165,14 +156,14 @@ class PackService {
   }
 
   // ── AI: Proposal — Generate proposal data ──
-  async generateProposal(dealId: string) {
-    const deal = db.select().from(deals).where(eq(deals.id, dealId)).get();
+  async generateProposal(dealId: string, companyId: string) {
+    const [deal] = await db.select().from(deals).where(and(eq(deals.id, dealId), eq(deals.companyId, companyId)));
     if (!deal) throw new Error("Deal not found");
 
-    const lead = deal.leadId ? db.select().from(leads).where(eq(leads.id, deal.leadId)).get() : null;
-    const visitHistory = db.select().from(visits).where(eq(visits.dealId, dealId)).all();
+    const lead = deal.leadId ? (await db.select().from(leads).where(eq(leads.id, deal.leadId)))[0] : null;
+    const visitHistory = await db.select().from(visits).where(eq(visits.dealId, dealId));
 
-    const stages = db.select().from(pipelineStages).all();
+    const stages = await db.select().from(pipelineStages);
     const stage = stages.find((s) => s.id === deal.stageId);
 
     return {
@@ -191,10 +182,10 @@ class PackService {
   }
 
   // ── AI: Analytics — Predictive insights ──
-  async getPredictiveAnalytics(userId?: string) {
-    let dealsQuery = db.select().from(deals).$dynamic();
-    if (userId) dealsQuery = dealsQuery.where(eq(deals.userId, userId));
-    const allDeals = dealsQuery.all();
+  async getPredictiveAnalytics(companyId: string, userId?: string) {
+    const conditions = [eq(deals.companyId, companyId)];
+    if (userId) conditions.push(eq(deals.userId, userId));
+    const allDeals = await db.select().from(deals).where(and(...conditions));
     const totalValue = allDeals.reduce((s, d) => s + Number(d.value), 0);
     const avgDealValue = allDeals.length > 0 ? Math.round(totalValue / allDeals.length) : 0;
 

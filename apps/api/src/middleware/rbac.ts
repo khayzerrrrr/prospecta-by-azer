@@ -4,6 +4,10 @@ import { ForbiddenError } from "../utils/errors";
 type Permission = string;
 
 const rolePermissions: Record<UserSession["role"], Permission[]> = {
+  // Platform-level role, deliberately scoped to company management only —
+  // no blanket access to tenant business data (leads/visits/deals/etc.)
+  // without an explicit impersonation flow, which doesn't exist yet.
+  master_account: ["companies:read", "companies:write"],
   super_admin: ["*"],
   admin: [
     "users:read", "users:write",
@@ -51,6 +55,7 @@ export function requirePermission(permission: Permission) {
 export interface OwnedRecord {
   ownerId?: string | null;
   territoryId?: string | null;
+  companyId?: string | null;
 }
 
 // Manager scoping is territory-based rather than a real reports-to hierarchy,
@@ -58,6 +63,11 @@ export interface OwnedRecord {
 // carry their own territoryId (visits/deals) resolve it via a join at the
 // call site before reaching this function.
 export function canAccessRecord(user: UserSession, record: OwnedRecord): boolean {
+  // Company is a hard tenant boundary — nobody crosses it except
+  // master_account, which doesn't use this record-level check at all
+  // (it only gets the dedicated companies:* permissions above).
+  if (record.companyId !== undefined && record.companyId !== user.companyId) return false;
+
   if (user.role === "super_admin" || user.role === "admin") return true;
   if (user.role === "manager") {
     return !!record.territoryId && !!user.territoryId && record.territoryId === user.territoryId;

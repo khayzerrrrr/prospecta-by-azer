@@ -1,3 +1,4 @@
+export { companies } from "./companies";
 export { users } from "./users";
 export { territories } from "./territories";
 export { leads } from "./leads";

@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 import { db, routes, routeStops, leads, users } from "@visitflow/db";
-import { eq, asc, inArray, sql } from "drizzle-orm";
+import { eq, asc, inArray, sql, and } from "drizzle-orm";
 import { haversineDistance } from "@visitflow/utils";
 import { getAuthUser } from "../middleware/auth";
 import { requirePermission } from "../middleware/rbac";
@@ -9,11 +9,11 @@ import { UnauthorizedError, NotFoundError } from "../utils/errors";
 
 // Routes have no territoryId of their own — manager scoping for this
 // resource falls back to the owning agent's own territoryId instead.
-const routeOwnership = ownershipGuard((id: string) => {
-  const route = db.select().from(routes).where(eq(routes.id, id)).get();
+const routeOwnership = ownershipGuard(async (id: string) => {
+  const [route] = await db.select().from(routes).where(eq(routes.id, id));
   if (!route) return undefined;
-  const owner = db.select().from(users).where(eq(users.id, route.userId)).get();
-  return { ownerId: route.userId, territoryId: owner?.territoryId ?? null };
+  const [owner] = await db.select().from(users).where(eq(users.id, route.userId));
+  return { ownerId: route.userId, territoryId: owner?.territoryId ?? null, companyId: route.companyId };
 });
 
 export const routeRoutes = new Elysia({ prefix: "/routes" })
@@ -23,42 +23,44 @@ export const routeRoutes = new Elysia({ prefix: "/routes" })
     return { user };
   })
   .get("/", async ({ user }) => {
-    let q = db.select().from(routes).$dynamic();
+    const conditions = [eq(routes.companyId, user.companyId!)];
     if (user.role === "agent") {
-      q = q.where(eq(routes.userId, user.id));
+      conditions.push(eq(routes.userId, user.id));
     } else if (user.role === "manager") {
       if (!user.territoryId) return { success: true, data: [] };
-      const territoryUserIds = db.select({ id: users.id }).from(users).where(eq(users.territoryId, user.territoryId)).all().map((u) => u.id);
-      q = q.where(territoryUserIds.length > 0 ? inArray(routes.userId, territoryUserIds) : sql`1=0`);
+      const territoryUserIds = (await db.select({ id: users.id }).from(users).where(eq(users.territoryId, user.territoryId))).map((u) => u.id);
+      conditions.push(territoryUserIds.length > 0 ? inArray(routes.userId, territoryUserIds) : sql`1=0`);
     }
-    return { success: true, data: q.all() };
+    const data = await db.select().from(routes).where(and(...conditions));
+    return { success: true, data };
   }, { beforeHandle: requirePermission("routes:read") })
   .get("/:id", async ({ params }) => {
-    const route = db.select().from(routes).where(eq(routes.id, params.id)).get();
+    const [route] = await db.select().from(routes).where(eq(routes.id, params.id));
     if (!route) throw new NotFoundError("Route not found");
-    const stops = db.select({
+    const stops = await db.select({
       id: routeStops.id, stopOrder: routeStops.stopOrder, status: routeStops.status,
       leadId: routeStops.leadId, companyName: leads.companyName,
       latitude: leads.latitude, longitude: leads.longitude,
     }).from(routeStops).leftJoin(leads, eq(routeStops.leadId, leads.id))
-      .where(eq(routeStops.routeId, params.id)).orderBy(asc(routeStops.stopOrder)).all();
+      .where(eq(routeStops.routeId, params.id)).orderBy(asc(routeStops.stopOrder));
     return { success: true, data: { ...route, stops } };
   }, { beforeHandle: [requirePermission("routes:read"), routeOwnership] })
   .post("/", async ({ body, user }) => {
     const id = crypto.randomUUID();
-    db.insert(routes).values({ id, ...(body as any), userId: user.id }).run();
-    return { success: true, data: db.select().from(routes).where(eq(routes.id, id)).get() };
+    await db.insert(routes).values({ id, ...(body as any), companyId: user.companyId!, userId: user.id });
+    const [route] = await db.select().from(routes).where(eq(routes.id, id));
+    return { success: true, data: route };
   }, { beforeHandle: requirePermission("routes:write") })
-  .post("/:id/stops", async ({ params, body }) => {
+  .post("/:id/stops", async ({ params, body, user }) => {
     const { leadId, stopOrder } = body as any;
     const id = crypto.randomUUID();
-    db.insert(routeStops).values({ id, routeId: params.id, leadId, stopOrder }).run();
+    await db.insert(routeStops).values({ id, companyId: user.companyId!, routeId: params.id, leadId, stopOrder });
     return { success: true };
   }, { beforeHandle: [requirePermission("routes:write"), routeOwnership] })
   .post("/:id/optimize", async ({ params }) => {
-    const stops = db.select({ id: routeStops.id, latitude: leads.latitude, longitude: leads.longitude })
+    const stops = await db.select({ id: routeStops.id, latitude: leads.latitude, longitude: leads.longitude })
       .from(routeStops).leftJoin(leads, eq(routeStops.leadId, leads.id))
-      .where(eq(routeStops.routeId, params.id)).all();
+      .where(eq(routeStops.routeId, params.id));
 
     if (stops.length < 2) return { success: true, message: "Not enough stops" };
     const optimized: typeof stops = [];
@@ -79,13 +81,13 @@ export const routeRoutes = new Elysia({ prefix: "/routes" })
     }
     let totalDist = 0;
     for (let i = 0; i < optimized.length; i++) {
-      db.update(routeStops).set({ stopOrder: i + 1 }).where(eq(routeStops.id, optimized[i]!.id)).run();
+      await db.update(routeStops).set({ stopOrder: i + 1 }).where(eq(routeStops.id, optimized[i]!.id));
       if (i > 0 && optimized[i - 1]?.latitude && optimized[i]?.latitude) {
         totalDist += haversineDistance(optimized[i - 1]!.latitude!, optimized[i - 1]!.longitude!, optimized[i]!.latitude!, optimized[i]!.longitude!);
       }
     }
     totalDist = Math.round(totalDist / 10) / 100;
-    db.update(routes).set({ totalDistanceKm: totalDist, estimatedDurationMinutes: Math.round(totalDist * 3) })
-      .where(eq(routes.id, params.id)).run();
+    await db.update(routes).set({ totalDistanceKm: totalDist, estimatedDurationMinutes: Math.round(totalDist * 3) })
+      .where(eq(routes.id, params.id));
     return { success: true, data: { totalDistanceKm: totalDist } };
   }, { beforeHandle: [requirePermission("routes:write"), routeOwnership] });

@@ -1,7 +1,11 @@
-import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+import { pgTable, text, timestamp, real, jsonb } from "drizzle-orm/pg-core";
+import { companies } from "./companies";
+import { users } from "./users";
+import { territories } from "./territories";
 
-export const leads = sqliteTable("leads", {
+export const leads = pgTable("leads", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  companyId: text("company_id").notNull().references(() => companies.id),
   companyName: text("company_name").notNull(),
   contactName: text("contact_name"),
   contactTitle: text("contact_title"),
@@ -21,13 +25,15 @@ export const leads = sqliteTable("leads", {
   industry: text("industry"),
   website: text("website"),
   notes: text("notes"),
-  tags: text("tags").default("[]"),
-  customFields: text("custom_fields").default("{}"),
-  assignedTo: text("assigned_to"),
-  territoryId: text("territory_id"),
-  createdBy: text("created_by").notNull(),
+  tags: jsonb("tags").$type<string[]>().default([]),
+  customFields: jsonb("custom_fields").$type<Record<string, unknown>>().default({}),
+  assignedTo: text("assigned_to").references(() => users.id, { onDelete: "set null" }),
+  territoryId: text("territory_id").references(() => territories.id),
+  createdBy: text("created_by").notNull().references(() => users.id),
+  // Not FK'd to deals.id — would create a leads<->deals circular import;
+  // deals.leadId already carries the authoritative relationship.
   convertedDealId: text("converted_deal_id"),
-  lastContactedAt: integer("last_contacted_at", { mode: "timestamp" }),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  lastContactedAt: timestamp("last_contacted_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

@@ -17,6 +17,7 @@ export async function getAuthUser(request: Request, cookie?: any): Promise<UserS
     email: payload.email as string,
     fullName: payload.fullName as string,
     role: payload.role as UserSession["role"],
+    companyId: (payload.companyId as string) || null,
     territoryId: (payload.territoryId as string) || null,
     avatarUrl: (payload.avatarUrl as string) || null,
   };

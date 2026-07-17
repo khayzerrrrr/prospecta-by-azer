@@ -70,10 +70,9 @@
       "name": "@visitflow/db",
       "version": "1.0.0",
       "dependencies": {
-        "@types/better-sqlite3": "^7.6.13",
-        "better-sqlite3": "^12.11.1",
         "drizzle-kit": "^0.30.5",
         "drizzle-orm": "^0.38.3",
+        "postgres": "^3.4.5",
       },
       "devDependencies": {
         "@types/bun": "latest",

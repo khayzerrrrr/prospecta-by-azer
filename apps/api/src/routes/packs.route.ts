@@ -12,35 +12,35 @@ export const packRoutes = new Elysia({ prefix: "/packs" })
     return { user };
   })
 
-  .post("/onboard/:type/:id", async ({ params }) => {
+  .post("/onboard/:type/:id", async ({ params, user }) => {
     const { type, id } = params as { type: string; id: string };
     if (!["industry", "ai"].includes(type)) return { success: false, error: "Invalid type" };
     // Enable pack
-    await packService.togglePack(type as "industry" | "ai", id);
+    await packService.togglePack(type as "industry" | "ai", id, user.companyId!);
     // Configure
-    await packService.configurePack(type as "industry" | "ai", id, { installed: true, installedAt: new Date().toISOString() });
+    await packService.configurePack(type as "industry" | "ai", id, { installed: true, installedAt: new Date().toISOString() }, user.companyId!);
     return { success: true, data: { enabled: true } };
   }, { beforeHandle: requirePermission("settings:write") })
 
   // ─── Industry Packs ───────────────────────────────
 
-  .get("/industry", async () => {
-    const packs = await packService.listIndustryPacks();
+  .get("/industry", async ({ user }) => {
+    const packs = await packService.listIndustryPacks(user.companyId!);
     return { success: true, data: packs };
   })
 
-  .get("/industry/:id", async ({ params }) => {
-    const pack = await packService.getPackDetail("industry", params.id);
+  .get("/industry/:id", async ({ params, user }) => {
+    const pack = await packService.getPackDetail("industry", params.id, user.companyId!);
     return { success: true, data: pack };
   })
 
-  .post("/industry/:id/toggle", async ({ params }) => {
-    const result = await packService.togglePack("industry", params.id);
+  .post("/industry/:id/toggle", async ({ params, user }) => {
+    const result = await packService.togglePack("industry", params.id, user.companyId!);
     return { success: true, data: result };
   }, { beforeHandle: requirePermission("settings:write") })
 
-  .post("/industry/:id/configure", async ({ params, body }) => {
-    const result = await packService.configurePack("industry", params.id, body);
+  .post("/industry/:id/configure", async ({ params, body, user }) => {
+    const result = await packService.configurePack("industry", params.id, body, user.companyId!);
     return { success: true, data: result };
   }, { beforeHandle: requirePermission("settings:write") })
 
@@ -50,7 +50,7 @@ export const packRoutes = new Elysia({ prefix: "/packs" })
     if (!Array.isArray(schools) || schools.length === 0) {
       return { success: false, error: "No schools data provided" };
     }
-    const result = await packService.importSchools(schools, user.id);
+    const result = await packService.importSchools(schools, user.id, user.companyId!);
     return { success: true, data: result };
   }, {
     beforeHandle: requirePermission("leads:import"),
@@ -73,23 +73,23 @@ export const packRoutes = new Elysia({ prefix: "/packs" })
 
   // ─── AI Packs ────────────────────────────────────
 
-  .get("/ai", async () => {
-    const packs = await packService.listAiPacks();
+  .get("/ai", async ({ user }) => {
+    const packs = await packService.listAiPacks(user.companyId!);
     return { success: true, data: packs };
   })
 
-  .get("/ai/:id", async ({ params }) => {
-    const pack = await packService.getPackDetail("ai", params.id);
+  .get("/ai/:id", async ({ params, user }) => {
+    const pack = await packService.getPackDetail("ai", params.id, user.companyId!);
     return { success: true, data: pack };
   })
 
-  .post("/ai/:id/toggle", async ({ params }) => {
-    const result = await packService.togglePack("ai", params.id);
+  .post("/ai/:id/toggle", async ({ params, user }) => {
+    const result = await packService.togglePack("ai", params.id, user.companyId!);
     return { success: true, data: result };
   }, { beforeHandle: requirePermission("settings:write") })
 
-  .post("/ai/:id/configure", async ({ params, body }) => {
-    const result = await packService.configurePack("ai", params.id, body);
+  .post("/ai/:id/configure", async ({ params, body, user }) => {
+    const result = await packService.configurePack("ai", params.id, body, user.companyId!);
     return { success: true, data: result };
   }, { beforeHandle: requirePermission("settings:write") })
 
@@ -100,8 +100,8 @@ export const packRoutes = new Elysia({ prefix: "/packs" })
   }, { beforeHandle: requirePermission("analytics:read") })
 
   // Proposal AI
-  .get("/ai/proposal/generate/:dealId", async ({ params }) => {
-    const proposal = await packService.generateProposal(params.dealId);
+  .get("/ai/proposal/generate/:dealId", async ({ params, user }) => {
+    const proposal = await packService.generateProposal(params.dealId, user.companyId!);
     return { success: true, data: proposal };
   }, { beforeHandle: requirePermission("pipeline:read") })
 
@@ -120,13 +120,13 @@ export const packRoutes = new Elysia({ prefix: "/packs" })
 
   // Analytics AI
   .get("/ai/analytics-ai/predict", async ({ user }) => {
-    const analytics = await packService.getPredictiveAnalytics(user.role === "agent" ? user.id : undefined);
+    const analytics = await packService.getPredictiveAnalytics(user.companyId!, user.role === "agent" ? user.id : undefined);
     return { success: true, data: analytics };
   }, { beforeHandle: requirePermission("analytics:read") })
 
   // Forecast AI
   .get("/ai/forecast", async ({ user }) => {
-    const analytics = await packService.getPredictiveAnalytics(user.role === "agent" ? user.id : undefined);
+    const analytics = await packService.getPredictiveAnalytics(user.companyId!, user.role === "agent" ? user.id : undefined);
     return {
       success: true,
       data: {

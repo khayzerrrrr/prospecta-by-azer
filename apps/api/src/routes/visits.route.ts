@@ -7,11 +7,11 @@ import { requirePermission } from "../middleware/rbac";
 import { ownershipGuard } from "../middleware/ownership";
 import { UnauthorizedError } from "../utils/errors";
 
-const visitOwnership = ownershipGuard((id: string) => {
-  const visit = db.select().from(visits).where(eq(visits.id, id)).get();
+const visitOwnership = ownershipGuard(async (id: string) => {
+  const [visit] = await db.select().from(visits).where(eq(visits.id, id));
   if (!visit) return undefined;
-  const lead = db.select().from(leads).where(eq(leads.id, visit.leadId)).get();
-  return { ownerId: visit.userId, territoryId: lead?.territoryId ?? null };
+  const [lead] = await db.select().from(leads).where(eq(leads.id, visit.leadId));
+  return { ownerId: visit.userId, territoryId: lead?.territoryId ?? null, companyId: visit.companyId };
 });
 
 export const visitRoutes = new Elysia({ prefix: "/visits" })
@@ -22,25 +22,25 @@ export const visitRoutes = new Elysia({ prefix: "/visits" })
   })
   .get("/", async ({ query, user }) => visitService.list(query, user), { beforeHandle: requirePermission("visits:read") })
   .get("/:id", async ({ params }) => {
-    const data = visitService.getById(params.id);
+    const data = await visitService.getById(params.id);
     return { success: true, data };
   }, { beforeHandle: [requirePermission("visits:read"), visitOwnership] })
   .post("/", async ({ body, user }) => {
-    const data = visitService.create(body, user);
+    const data = await visitService.create(body, user);
     return { success: true, data };
   }, {
     beforeHandle: requirePermission("visits:write"),
     body: t.Object({ leadId: t.String(), title: t.String(), description: t.Optional(t.String()), visitType: t.Optional(t.String()), scheduledDate: t.String(), scheduledStartTime: t.Optional(t.String()) }),
   })
   .post("/:id/checkin", async ({ params, body, user }) => {
-    const data = visitService.checkin(params.id, body, user);
+    const data = await visitService.checkin(params.id, body, user);
     return { success: true, data };
   }, {
     beforeHandle: [requirePermission("visits:checkin"), visitOwnership],
     body: t.Object({ latitude: t.Number(), longitude: t.Number() }),
   })
   .post("/:id/checkout", async ({ params, body, user }) => {
-    const data = visitService.checkout(params.id, body, body.meetingNotes || null, body.nextSteps || null, user);
+    const data = await visitService.checkout(params.id, body, body.meetingNotes || null, body.nextSteps || null, user);
     return { success: true, data };
   }, {
     beforeHandle: [requirePermission("visits:checkin"), visitOwnership],

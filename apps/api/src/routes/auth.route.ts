@@ -1,11 +1,13 @@
 import { Elysia, t } from "elysia";
 import { authService } from "../services/auth.service";
 import { getAuthUser } from "../middleware/auth";
+import { resolveTenant } from "../middleware/tenant";
 
 export const authRoutes = new Elysia({ prefix: "/auth" })
-  .post("/register", async ({ body }) => {
+  .derive(resolveTenant)
+  .post("/register", async ({ body, company }) => {
     try {
-      const result = await authService.register(body);
+      const result = await authService.register(body, company.id);
       return { success: true, data: result };
     } catch (e: any) {
       return { success: false, error: e.message };
@@ -19,9 +21,9 @@ export const authRoutes = new Elysia({ prefix: "/auth" })
     }),
   })
 
-  .post("/login", async ({ body, set, cookie }) => {
+  .post("/login", async ({ body, set, cookie, company }) => {
     try {
-      const result = await authService.login(body);
+      const result = await authService.login(body, company.id);
       cookie.access_token?.set({
         value: result.tokens.accessToken, httpOnly: true, secure: true,
         sameSite: "lax", path: "/", maxAge: 900,

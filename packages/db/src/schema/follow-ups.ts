@@ -1,10 +1,15 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { companies } from "./companies";
+import { leads } from "./leads";
+import { visits } from "./visits";
+import { users } from "./users";
 
-export const followUps = sqliteTable("follow_ups", {
+export const followUps = pgTable("follow_ups", {
   id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  leadId: text("lead_id"),
-  visitId: text("visit_id"),
-  userId: text("user_id").notNull(),
+  companyId: text("company_id").notNull().references(() => companies.id),
+  leadId: text("lead_id").references(() => leads.id, { onDelete: "set null" }),
+  visitId: text("visit_id").references(() => visits.id, { onDelete: "set null" }),
+  userId: text("user_id").notNull().references(() => users.id),
   title: text("title").notNull(),
   description: text("description"),
   dueDate: text("due_date").notNull(),
@@ -12,9 +17,9 @@ export const followUps = sqliteTable("follow_ups", {
   status: text("status", { enum: ["pending", "in_progress", "completed", "cancelled"] }).notNull().default("pending"),
   priority: text("priority", { enum: ["low", "medium", "high", "urgent"] }).default("medium"),
   type: text("type", { enum: ["call", "email", "visit", "note", "task", "meeting", "sms", "whatsapp"] }).default("task"),
-  completedAt: integer("completed_at", { mode: "timestamp" }),
-  completedBy: text("completed_by"),
-  reminderSentAt: integer("reminder_sent_at", { mode: "timestamp" }),
-  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
-  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
+  completedAt: timestamp("completed_at"),
+  completedBy: text("completed_by").references(() => users.id),
+  reminderSentAt: timestamp("reminder_sent_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

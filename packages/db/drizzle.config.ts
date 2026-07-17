@@ -3,8 +3,8 @@ import { defineConfig } from "drizzle-kit";
 export default defineConfig({
   schema: "./src/schema/index.ts",
   out: "./drizzle",
-  dialect: "sqlite",
+  dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL || "../../data/visitflow.db",
+    url: process.env.DATABASE_URL || "postgresql://visitflow:visitflow_secret@localhost:5432/visitflow",
   },
 });

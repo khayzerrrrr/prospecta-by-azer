@@ -7,10 +7,10 @@ import { requirePermission } from "../middleware/rbac";
 import { ownershipGuard } from "../middleware/ownership";
 import { UnauthorizedError } from "../utils/errors";
 
-const leadOwnership = ownershipGuard((id: string) => {
-  const lead = db.select().from(leads).where(eq(leads.id, id)).get();
+const leadOwnership = ownershipGuard(async (id: string) => {
+  const [lead] = await db.select().from(leads).where(eq(leads.id, id));
   if (!lead) return undefined;
-  return { ownerId: lead.assignedTo, territoryId: lead.territoryId };
+  return { ownerId: lead.assignedTo, territoryId: lead.territoryId, companyId: lead.companyId };
 });
 
 export const leadRoutes = new Elysia({ prefix: "/leads" })
@@ -20,22 +20,22 @@ export const leadRoutes = new Elysia({ prefix: "/leads" })
     return { user };
   })
   .get("/", async ({ query, user }) => {
-    const result = leadService.list(query, user);
+    const result = await leadService.list(query, user);
     return { success: true, ...result };
   }, { beforeHandle: requirePermission("leads:read") })
   .get("/:id", async ({ params }) => {
-    const lead = leadService.getById(params.id);
+    const lead = await leadService.getById(params.id);
     return { success: true, data: lead };
   }, { beforeHandle: [requirePermission("leads:read"), leadOwnership] })
   .post("/", async ({ body, user }) => {
-    const lead = leadService.create(body, user);
+    const lead = await leadService.create(body, user);
     return { success: true, data: lead };
   }, { beforeHandle: requirePermission("leads:write") })
   .patch("/:id", async ({ params, body }) => {
-    const lead = leadService.update(params.id, body);
+    const lead = await leadService.update(params.id, body);
     return { success: true, data: lead };
   }, { beforeHandle: [requirePermission("leads:write"), leadOwnership] })
   .delete("/:id", async ({ params }) => {
-    leadService.delete(params.id);
+    await leadService.delete(params.id);
     return { success: true };
   }, { beforeHandle: [requirePermission("leads:write"), leadOwnership] });
