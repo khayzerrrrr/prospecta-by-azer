@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import { api } from "../../services/api";
+import { WS_URL } from "../../services/config";
 import { MapPin, Navigation, Clock, Route, Wifi, WifiOff, Radio } from "lucide-react";
 import L from "leaflet";
 
@@ -68,7 +69,7 @@ export function AgentMap() {
     // Auto-connect WebSocket
     try {
       const token = localStorage.getItem("access_token");
-      const ws = new WebSocket(`ws://localhost:3000/ws?token=${token}`);
+      const ws = new WebSocket(`${WS_URL}?token=${token}`);
       ws.onopen = () => setWsConnected(true);
       ws.onclose = () => setWsConnected(false);
       wsRef.current = ws;

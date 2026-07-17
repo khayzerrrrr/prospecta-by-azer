@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL || "/api";
+import { API_BASE_URL } from "./config";
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const token = localStorage.getItem("access_token");
@@ -8,7 +8,7 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
     ...(options?.headers as Record<string, string> || {}),
   };
 
-  const res = await fetch(`${BASE_URL}${url}`, {
+  const res = await fetch(`${API_BASE_URL}${url}`, {
     ...options,
     headers,
     credentials: "include",

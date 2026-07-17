@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { UserSession } from "@visitflow/shared";
+import { API_BASE_URL } from "../services/config";
 
 interface AuthState {
   user: UserSession | null;
@@ -18,8 +19,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: false,
 
   login: async (email, password) => {
-    const base = import.meta.env.VITE_API_URL || "/api";
-    const res = await fetch(`${base}/auth/login`, {
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -53,8 +53,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       return;
     }
     try {
-      const base = import.meta.env.VITE_API_URL || "/api";
-    const res = await fetch(`${base}/auth/me`, {
+      const res = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
         credentials: "include",
       });
