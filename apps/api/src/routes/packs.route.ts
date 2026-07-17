@@ -1,9 +1,17 @@
 import { Elysia, t } from "elysia";
 import { packService } from "../services/pack.service";
 import { getAuthUser } from "../middleware/auth";
+import { requirePermission } from "../middleware/rbac";
+import { UnauthorizedError } from "../utils/errors";
 
 export const packRoutes = new Elysia({ prefix: "/packs" })
-  // ─── Public: Onboarding (no auth required) ─────────
+  // ─── Auth required (was previously public — see Stage 1 audit) ────
+  .derive(async ({ request, cookie }) => {
+    const user = await getAuthUser(request, cookie).catch(() => null);
+    if (!user) throw new UnauthorizedError();
+    return { user };
+  })
+
   .post("/onboard/:type/:id", async ({ params }) => {
     const { type, id } = params as { type: string; id: string };
     if (!["industry", "ai"].includes(type)) return { success: false, error: "Invalid type" };
@@ -12,14 +20,7 @@ export const packRoutes = new Elysia({ prefix: "/packs" })
     // Configure
     await packService.configurePack(type as "industry" | "ai", id, { installed: true, installedAt: new Date().toISOString() });
     return { success: true, data: { enabled: true } };
-  })
-
-  // ─── Auth required below ───────────────────────────
-  .derive(async ({ request, cookie }) => {
-    const user = await getAuthUser(request, cookie).catch(() => null);
-    if (!user) throw new Error("Unauthorized");
-    return { user };
-  })
+  }, { beforeHandle: requirePermission("settings:write") })
 
   // ─── Industry Packs ───────────────────────────────
 
@@ -36,12 +37,12 @@ export const packRoutes = new Elysia({ prefix: "/packs" })
   .post("/industry/:id/toggle", async ({ params }) => {
     const result = await packService.togglePack("industry", params.id);
     return { success: true, data: result };
-  })
+  }, { beforeHandle: requirePermission("settings:write") })
 
   .post("/industry/:id/configure", async ({ params, body }) => {
     const result = await packService.configurePack("industry", params.id, body);
     return { success: true, data: result };
-  })
+  }, { beforeHandle: requirePermission("settings:write") })
 
   // Education — School import
   .post("/industry/education/import-schools", async ({ body, user }) => {
@@ -52,6 +53,7 @@ export const packRoutes = new Elysia({ prefix: "/packs" })
     const result = await packService.importSchools(schools, user.id);
     return { success: true, data: result };
   }, {
+    beforeHandle: requirePermission("leads:import"),
     body: t.Object({
       schools: t.Array(t.Object({
         schoolName: t.String(),
@@ -84,24 +86,24 @@ export const packRoutes = new Elysia({ prefix: "/packs" })
   .post("/ai/:id/toggle", async ({ params }) => {
     const result = await packService.togglePack("ai", params.id);
     return { success: true, data: result };
-  })
+  }, { beforeHandle: requirePermission("settings:write") })
 
   .post("/ai/:id/configure", async ({ params, body }) => {
     const result = await packService.configurePack("ai", params.id, body);
     return { success: true, data: result };
-  })
+  }, { beforeHandle: requirePermission("settings:write") })
 
   // Sales Coach AI
   .get("/ai/sales-coach/analyze", async ({ user }) => {
     const analysis = await packService.analyzeSalesCoach(user.id);
     return { success: true, data: analysis };
-  })
+  }, { beforeHandle: requirePermission("analytics:read") })
 
   // Proposal AI
   .get("/ai/proposal/generate/:dealId", async ({ params }) => {
     const proposal = await packService.generateProposal(params.dealId);
     return { success: true, data: proposal };
-  })
+  }, { beforeHandle: requirePermission("pipeline:read") })
 
   // Meeting AI — placeholder
   .post("/ai/meeting/transcribe", async ({ body }) => {
@@ -114,17 +116,17 @@ export const packRoutes = new Elysia({ prefix: "/packs" })
         actionItems: ["Integrasikan dengan Whisper API", "Atur webhook untuk auto-save ke timeline lead"],
       },
     };
-  })
+  }, { beforeHandle: requirePermission("visits:write") })
 
   // Analytics AI
-  .get("/ai/analytics-ai/predict", async () => {
-    const analytics = await packService.getPredictiveAnalytics();
+  .get("/ai/analytics-ai/predict", async ({ user }) => {
+    const analytics = await packService.getPredictiveAnalytics(user.role === "agent" ? user.id : undefined);
     return { success: true, data: analytics };
-  })
+  }, { beforeHandle: requirePermission("analytics:read") })
 
   // Forecast AI
-  .get("/ai/forecast", async () => {
-    const analytics = await packService.getPredictiveAnalytics();
+  .get("/ai/forecast", async ({ user }) => {
+    const analytics = await packService.getPredictiveAnalytics(user.role === "agent" ? user.id : undefined);
     return {
       success: true,
       data: {
@@ -133,4 +135,4 @@ export const packRoutes = new Elysia({ prefix: "/packs" })
         message: "Forecast AI akan tersedia di rilis berikutnya dengan model ML yang lebih akurat.",
       },
     };
-  });
+  }, { beforeHandle: requirePermission("analytics:read") });

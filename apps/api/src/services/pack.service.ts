@@ -193,8 +193,10 @@ class PackService {
   }
 
   // ── AI: Analytics — Predictive insights ──
-  async getPredictiveAnalytics() {
-    const allDeals = db.select().from(deals).all();
+  async getPredictiveAnalytics(userId?: string) {
+    let dealsQuery = db.select().from(deals).$dynamic();
+    if (userId) dealsQuery = dealsQuery.where(eq(deals.userId, userId));
+    const allDeals = dealsQuery.all();
     const totalValue = allDeals.reduce((s, d) => s + Number(d.value), 0);
     const avgDealValue = allDeals.length > 0 ? Math.round(totalValue / allDeals.length) : 0;
 
