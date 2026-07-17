@@ -1,5 +1,5 @@
 import { db, visits, leads, analyticsEvents, followUps } from "@visitflow/db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, inArray } from "drizzle-orm";
 import { haversineDistance } from "@visitflow/utils";
 
 const MAX_CHECKIN_DISTANCE_M = 500;
@@ -8,12 +8,18 @@ class VisitService {
   list(params: any, user: any) {
     const { page = 1, perPage = 20, status, leadId } = params;
     const conditions: any[] = [];
-    if (user.role === "agent") conditions.push(eq(visits.userId, user.id));
+    if (user.role === "agent") {
+      conditions.push(eq(visits.userId, user.id));
+    } else if (user.role === "manager") {
+      if (!user.territoryId) return { success: true, data: [], pagination: { page, perPage, total: 0, totalPages: 0 } };
+      const territoryLeadIds = db.select({ id: leads.id }).from(leads).where(eq(leads.territoryId, user.territoryId)).all().map((l) => l.id);
+      conditions.push(territoryLeadIds.length > 0 ? inArray(visits.leadId, territoryLeadIds) : sql`1=0`);
+    }
     if (status) conditions.push(eq(visits.status as any, status));
     if (leadId) conditions.push(eq(visits.leadId, leadId));
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-    let countQuery = db.select({ count: sql<number>`count(*)` }).from(visits);
+    let countQuery = db.select({ count: sql<number>`count(*)` }).from(visits).$dynamic();
     if (whereClause) countQuery = countQuery.where(whereClause);
     const countResult = countQuery.all();
     const total = countResult[0]?.count ?? 0;

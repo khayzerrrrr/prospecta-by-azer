@@ -24,6 +24,10 @@ if (!userCount[0] || userCount[0].count === 0) {
     { name: "Bandung", region: "Jawa Barat", color: "#3B82F6", centerLat: -6.9175, centerLng: 107.6191, zoomLevel: 12 },
   ]).run();
 
+  // Manager/agent scoping is territory-based — assign the demo accounts a
+  // real territory so team data is actually visible out of the box.
+  const [defaultTerritory] = db.select({ id: territories.id }).from(territories).limit(1).all();
+
   // Demo users (password: password123)
   const hashes = [
     await Bun.password.hash("password123", { algorithm: "argon2id" }),
@@ -32,8 +36,8 @@ if (!userCount[0] || userCount[0].count === 0) {
   ];
   db.insert(users).values([
     { email: "admin@visitflow.dev", passwordHash: hashes[0], fullName: "Admin VisitFlow", role: "admin" },
-    { email: "manager@visitflow.dev", passwordHash: hashes[1], fullName: "Manager VisitFlow", role: "manager" },
-    { email: "agent@visitflow.dev", passwordHash: hashes[2], fullName: "Agent VisitFlow", role: "agent" },
+    { email: "manager@visitflow.dev", passwordHash: hashes[1], fullName: "Manager VisitFlow", role: "manager", territoryId: defaultTerritory?.id },
+    { email: "agent@visitflow.dev", passwordHash: hashes[2], fullName: "Agent VisitFlow", role: "agent", territoryId: defaultTerritory?.id },
   ]).run();
 
   console.log("Seed complete — 7 stages, 2 territories, 3 demo users");

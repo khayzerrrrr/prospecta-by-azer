@@ -8,6 +8,9 @@ class LeadService {
 
     if (user.role === "agent") {
       conditions.push(eq(leads.assignedTo, user.id));
+    } else if (user.role === "manager") {
+      if (!user.territoryId) return { data: [], pagination: { page, perPage, total: 0, totalPages: 0 } };
+      conditions.push(eq(leads.territoryId, user.territoryId));
     }
     if (status) conditions.push(eq(leads.status as any, status));
     if (qualification) conditions.push(eq(leads.qualification as any, qualification));
@@ -15,7 +18,7 @@ class LeadService {
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     // Efficient count using SQL aggregation
-    let countQuery = db.select({ count: sql<number>`count(*)` }).from(leads);
+    let countQuery = db.select({ count: sql<number>`count(*)` }).from(leads).$dynamic();
     if (whereClause) countQuery = countQuery.where(whereClause);
     if (search) {
       countQuery = countQuery.where(or(

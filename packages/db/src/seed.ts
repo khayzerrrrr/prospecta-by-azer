@@ -34,10 +34,13 @@ async function seed() {
   const existingUsers = db.select().from(s.users).all();
   if (existingUsers.length === 0) {
     const pw = await Bun.password.hash("password123", { algorithm: "argon2id" });
+    // Manager/agent scoping is territory-based — assign the demo accounts a
+    // real territory so team data is actually visible out of the box.
+    const [defaultTerritory] = db.select({ id: s.territories.id }).from(s.territories).limit(1).all();
     db.insert(s.users).values([
       { email: "admin@visitflow.dev", passwordHash: pw, fullName: "Admin VisitFlow", role: "admin", isActive: true },
-      { email: "manager@visitflow.dev", passwordHash: pw, fullName: "Budi Manager", role: "manager", isActive: true },
-      { email: "agent@visitflow.dev", passwordHash: pw, fullName: "Andi Agent", role: "agent", dailyTarget: 5, monthlyTarget: 100, isActive: true },
+      { email: "manager@visitflow.dev", passwordHash: pw, fullName: "Budi Manager", role: "manager", isActive: true, territoryId: defaultTerritory?.id },
+      { email: "agent@visitflow.dev", passwordHash: pw, fullName: "Andi Agent", role: "agent", dailyTarget: 5, monthlyTarget: 100, isActive: true, territoryId: defaultTerritory?.id },
     ]).run();
     console.log("Demo users created (password: password123)");
   }

@@ -1,4 +1,4 @@
-import { db, packSettings, leads, visits, deals, users, followUps } from "@visitflow/db";
+import { db, packSettings, leads, visits, deals, users, followUps, pipelineStages } from "@visitflow/db";
 import { eq, and, count, gte } from "drizzle-orm";
 
 // ── Industry Pack Definitions ──
@@ -143,11 +143,9 @@ class PackService {
       .get();
 
     const agentDeals = db.select().from(deals).where(eq(deals.userId, userId)).all();
-    const wonDeals = agentDeals.filter((d) => {
-      const stages = db.select().from(db._.schema!.pipelineStages).all();
-      const wonIds = stages.filter((s: any) => s.isWon).map((s: any) => s.id);
-      return wonIds.includes(d.stageId);
-    });
+    const stages = db.select().from(pipelineStages).all();
+    const wonIds = stages.filter((s) => s.isWon).map((s) => s.id);
+    const wonDeals = agentDeals.filter((d) => wonIds.includes(d.stageId));
 
     const totalCompleted = Number(completedVisits?.count || 0);
     const conversionRate = agentDeals.length > 0 ? Math.round((wonDeals.length / agentDeals.length) * 100) : 0;
@@ -174,8 +172,8 @@ class PackService {
     const lead = deal.leadId ? db.select().from(leads).where(eq(leads.id, deal.leadId)).get() : null;
     const visitHistory = db.select().from(visits).where(eq(visits.dealId, dealId)).all();
 
-    const stages = db.select().from(db._.schema!.pipelineStages).all();
-    const stage = stages.find((s: any) => s.id === deal.stageId);
+    const stages = db.select().from(pipelineStages).all();
+    const stage = stages.find((s) => s.id === deal.stageId);
 
     return {
       deal: { name: deal.name, value: Number(deal.value), stage: stage?.name, probability: deal.probability },

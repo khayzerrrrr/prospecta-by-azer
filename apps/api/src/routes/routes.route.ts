@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 import { db, routes, routeStops, leads, users } from "@visitflow/db";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, inArray, sql } from "drizzle-orm";
 import { haversineDistance } from "@visitflow/utils";
 import { getAuthUser } from "../middleware/auth";
 import { requirePermission } from "../middleware/rbac";
@@ -24,7 +24,13 @@ export const routeRoutes = new Elysia({ prefix: "/routes" })
   })
   .get("/", async ({ user }) => {
     let q = db.select().from(routes).$dynamic();
-    if (user.role === "agent") q = q.where(eq(routes.userId, user.id));
+    if (user.role === "agent") {
+      q = q.where(eq(routes.userId, user.id));
+    } else if (user.role === "manager") {
+      if (!user.territoryId) return { success: true, data: [] };
+      const territoryUserIds = db.select({ id: users.id }).from(users).where(eq(users.territoryId, user.territoryId)).all().map((u) => u.id);
+      q = q.where(territoryUserIds.length > 0 ? inArray(routes.userId, territoryUserIds) : sql`1=0`);
+    }
     return { success: true, data: q.all() };
   }, { beforeHandle: requirePermission("routes:read") })
   .get("/:id", async ({ params }) => {

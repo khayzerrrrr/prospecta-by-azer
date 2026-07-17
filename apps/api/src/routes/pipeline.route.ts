@@ -1,6 +1,6 @@
 import { Elysia } from "elysia";
 import { db, pipelineStages, deals, leads } from "@visitflow/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray, sql } from "drizzle-orm";
 import { getAuthUser } from "../middleware/auth";
 import { requirePermission } from "../middleware/rbac";
 import { ownershipGuard } from "../middleware/ownership";
@@ -27,7 +27,13 @@ export const pipelineRoutes = new Elysia({ prefix: "/pipeline" })
     const stageId = (query as any).stageId;
     const conditions = [];
     if (stageId) conditions.push(eq(deals.stageId, stageId));
-    if (user.role === "agent") conditions.push(eq(deals.userId, user.id));
+    if (user.role === "agent") {
+      conditions.push(eq(deals.userId, user.id));
+    } else if (user.role === "manager") {
+      if (!user.territoryId) return { success: true, data: [] };
+      const territoryLeadIds = db.select({ id: leads.id }).from(leads).where(eq(leads.territoryId, user.territoryId)).all().map((l) => l.id);
+      conditions.push(territoryLeadIds.length > 0 ? inArray(deals.leadId, territoryLeadIds) : sql`1=0`);
+    }
     let q = db.select().from(deals).$dynamic();
     if (conditions.length) q = q.where(and(...conditions));
     return { success: true, data: q.all() };
