@@ -73,7 +73,7 @@ if (!existingMaster) {
 
 const port = Number(process.env.PORT) || 3000;
 
-app.listen({ port, hostname: "0.0.0.0" }, ({ hostname, port }) => {
+app.listen({ port, hostname: "127.0.0.1" }, ({ hostname, port }) => {
   console.log(`VisitFlow API running at http://${hostname}:${port}`);
   console.log(`Swagger docs at http://${hostname}:${port}/docs`);
 });
