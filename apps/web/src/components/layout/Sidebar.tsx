@@ -79,14 +79,10 @@ export function Sidebar() {
       <div className={cn("flex items-center h-14 px-4 border-b border-white/10 shrink-0", sidebarOpen ? "justify-between" : "justify-center")}>
         {sidebarOpen ? (
           <div className="flex items-center gap-2.5">
-            <img src="/logo.png" alt="Prospecta" className="w-7 h-7 object-contain" />
-            <div>
-              <span className="text-base font-bold tracking-tight text-white leading-tight block">Prospecta</span>
-              <span className="text-[10px] text-blue-300 leading-tight block -mt-0.5">by Azer</span>
-            </div>
+            <img src="/logo-full.png" alt="Pevotrack" className="h-8 object-contain" />
           </div>
         ) : (
-          <img src="/logo.png" alt="Prospecta" className="w-6 h-6 object-contain" />
+          <img src="/logo-full.png" alt="Pevotrack" className="h-6 object-contain" />
         )}
         {sidebarOpen && (
           <button onClick={toggleSidebar} className="p-1 rounded-md hover:bg-white/10 transition-colors">

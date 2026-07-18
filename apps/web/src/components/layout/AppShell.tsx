@@ -29,7 +29,7 @@ export function AppShell() {
           </div>
           <div className="flex flex-col items-center gap-2">
             <div className="w-8 h-8 border-3 border-brand-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-slate-400 font-medium">Memuat Prospecta...</p>
+            <p className="text-sm text-slate-400 font-medium">Memuat Pevotrack...</p>
           </div>
         </div>
       </div>
@@ -57,11 +57,7 @@ export function AppShell() {
         <div className="lg:hidden sticky top-0 z-30 bg-surface-50/80 dark:bg-surface-950/80 backdrop-blur-xl border-b border-surface-200/60 dark:border-surface-700/60">
           <div className="flex items-center justify-between h-14 px-4">
             <div className="flex items-center gap-2">
-              <img src="/logo.png" alt="Prospecta" className="w-7 h-7 object-contain rounded-lg" />
-              <div>
-                <span className="text-base font-bold text-slate-900 dark:text-white">Prospecta</span>
-                <span className="text-[10px] text-brand-500 ml-1">by Azer</span>
-              </div>
+              <img src="/logo-full.png" alt="Pevotrack" className="h-6 object-contain" />
             </div>
           </div>
         </div>

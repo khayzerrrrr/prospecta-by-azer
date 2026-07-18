@@ -23,9 +23,9 @@ export const app = new Elysia()
     path: "/docs",
     documentation: {
       info: {
-        title: "Prospecta API",
-        version: "1.0.0",
-        description: "Prospecta by Azer — CRM Manajemen Kunjungan Lapangan",
+        title: "Pevotrack API",
+        version: "2.0.0",
+        description: "Pevotrack — Platform Manajemen Bisnis & Operasional",
       },
     },
   }))

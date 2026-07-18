@@ -36,10 +36,10 @@ export default function SignUp() {
       <div className="w-full max-w-sm flex flex-col items-center">
         <div className="flex flex-col items-center mb-5">
           <div className="w-14 h-14 rounded-2xl bg-white dark:bg-surface-800 shadow-elevation-mid flex items-center justify-center mb-2 ring-1 ring-surface-200">
-            <img src="/logo.png" alt="Prospecta" className="w-9 h-9 object-contain" />
+            <img src="/logo-full.png" alt="Pevotrack" className="h-8 object-contain" />
           </div>
-          <h1 className="text-lg font-bold text-slate-900 dark:text-white">Prospecta</h1>
-          <p className="text-[11px] text-slate-400">by Azer</p>
+          <h1 className="text-lg font-bold text-slate-900 dark:text-white">Pevotrack</h1>
+          <p className="text-[11px] text-slate-400">Platform Manajemen Bisnis</p>
         </div>
 
         <form onSubmit={handleSubmit} className="w-full bg-white dark:bg-surface-800 p-5 rounded-2xl shadow-elevation-mid space-y-4 ring-1 ring-surface-200/50">
@@ -74,7 +74,7 @@ export default function SignUp() {
           </div>
         </form>
 
-        <p className="text-[10px] text-slate-400 mt-5">Prospecta by Azer v1.0 · Bun + Elysia + React</p>
+        <p className="text-[10px] text-slate-400 mt-5">Pevotrack v2.0 · Bun + Elysia + React</p>
       </div>
     </div>
   );
