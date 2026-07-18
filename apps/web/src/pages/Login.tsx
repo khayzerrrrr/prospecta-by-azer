@@ -30,7 +30,7 @@ export default function Login() {
         {/* Logo */}
         <div className="flex flex-col items-center mb-5">
           <div className="w-14 h-14 rounded-2xl bg-white dark:bg-surface-800 shadow-elevation-mid flex items-center justify-center mb-2 ring-1 ring-surface-200">
-            <img src="/logo-full.png" alt="Pevotrack" className="h-8 object-contain" />
+            <div className="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold text-lg">P</div>
           </div>
           <h1 className="text-lg font-bold text-slate-900 dark:text-white">Pevotrack</h1>
           <p className="text-[11px] text-slate-400">Platform Manajemen Bisnis</p>

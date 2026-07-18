@@ -57,7 +57,10 @@ export function AppShell() {
         <div className="lg:hidden sticky top-0 z-30 bg-surface-50/80 dark:bg-surface-950/80 backdrop-blur-xl border-b border-surface-200/60 dark:border-surface-700/60">
           <div className="flex items-center justify-between h-14 px-4">
             <div className="flex items-center gap-2">
-              <img src="/logo-full.png" alt="Pevotrack" className="h-6 object-contain" />
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-brand-600 flex items-center justify-center text-white font-bold text-xs">P</div>
+                <span className="text-base font-bold text-slate-900 dark:text-white">Pevotrack</span>
+              </div>
             </div>
           </div>
         </div>
