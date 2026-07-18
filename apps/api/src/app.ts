@@ -30,7 +30,7 @@ export const app = new Elysia()
     },
   }))
   .use(cors({
-    origin: env.CORS_ORIGIN,
+    origin: env.CORS_ORIGIN === "*" ? true : env.CORS_ORIGIN.split(",").map((o) => o.trim()),
     credentials: true,
   }))
   .onError(({ error, set }) => {
